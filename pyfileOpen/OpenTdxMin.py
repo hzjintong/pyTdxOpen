@@ -230,7 +230,7 @@ def validate_datetime_sequence(data_list):
 
 # 使用示例
 def main():
-    filepath = r"F:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh999999.lc1"  # 指定需要读取的文件名及其完整路径
+    filepath = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh171753.lc1"  # 指定需要读取的文件名及其完整路径
     start_date_time = "1990/01/01 09:20"
     end_date_time = "2025/12/31 19:40"
     # 尝试调用

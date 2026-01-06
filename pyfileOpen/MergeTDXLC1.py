@@ -150,10 +150,10 @@ def validate_time_sequence(data_list):
 
 def main():
     # 配置输入和输出路径
-    input_file1 = "D:\\new_hxzq_hc\\vipdoc\\ds\\minline\\27#HZ5328.lc1"  # 替换为第一个文件路径
-    input_file2 = "D:\\new_tdx\\vipdoc\\ds\\minline\\27#HZ5328.lc1"  # 替换为第二个文件路径
-    output_dir = "D:/new_tdx/vipdoc/ds/minline"  # 替换为输出目录
-    output_filename = "27#HZ5328.lc1"  # 输出文件名
+    input_file1 = r"D:\new_hxzq_hc\vipdoc\ds\minline\27#HZ5017.lc1"  # 替换为第一个文件路径
+    input_file2 = r"D:\new_tdx\vipdoc\ds\minline\27#HZ5017.lc1"  # 替换为第二个文件路径
+    output_dir =  r"g:/D盘备份1/new_hxzq_hc/vipdoc/ds/minline"  # 替换为输出目录
+    output_filename = "27#HZ5017.lc1"  # 输出文件名
 
     # 拼装目录名和文件名成为一个完整的文件路径名
     output_path = os.path.join(output_dir, output_filename)

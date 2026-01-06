@@ -28,11 +28,11 @@ def read_tdx_cw_file(file_path):
                 code = stock_item[0].decode()
                 foa = stock_item[2]
                 cw_file.seek(foa)
-                info_data = cw_file.read(calcsize('<584f')) #原参数为264f
+                info_data = cw_file.read(calcsize('<584f')) #原参数量为264f
                 data_size = len(info_data)
-                cw_info = unpack('<584f', info_data)  #原参数为264f
-                print(stock_item)
-                print(code)
+                cw_info = unpack('<584f', info_data)  #原参数量为264f
+                print(f"stock_item : {stock_item}")
+                print(f"stock_code : {code}")
                 print(foa)
                 print(data_size)
                 print("%s, %s" % (code, str(cw_info)))
@@ -53,4 +53,11 @@ def main(open_filename):
 if __name__ == '__main__':
     open_file = "d:/new_hxzq_hc/vipdoc/cw/gpcw20211231.dat"
     main(open_file)
-
+    open_file = r"d:\new_hxzq_hc\vipdoc\cw\gpcw20220331.dat"
+    main(open_file)
+    open_file = r"d:\new_hxzq_hc\vipdoc\cw\gpcw20220630.dat"
+    main(open_file)
+    open_file = r"d:\new_hxzq_hc\vipdoc\cw\gpcw20220930.dat"
+    main(open_file)
+    open_file = r"d:\new_hxzq_hc\vipdoc\cw\gpcw20221231.dat"
+    main(open_file)

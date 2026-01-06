@@ -370,8 +370,8 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
             for long_file4 in file_list_day2[:3]:
                 print(long_file4)
 
-            file_list_lc1_lc5 = file_list_lc1 + file_list_lc12 + file_list_lc5 + file_list_lc52
-            file_list_lday = file_list_day + file_list_day2
+            file_list_lc1_lc5 = file_list_lc1 + file_list_lc5 # + file_list_lc12 + file_list_lc52
+            file_list_lday = file_list_day # + file_list_day2
             print(f"读取 分钟文件 总数 {len(file_list_lc1_lc5)}")
             print(f"读取 日线文件 总数 {len(file_list_lday)}")
 
