@@ -153,7 +153,7 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
 # 使用示例
 if __name__ == "__main__":
     # 读取日线数据
-    day_data = read_tdx_day_file(r"D:/new_hxzq_hc/vipdoc/sh/lday/sh000001.day", "1990-04-15", "2025-10-22")
+    day_data = read_tdx_day_file(r"D:/new_hxzq_hc/vipdoc/ds/lday/44#831039.day", "1990-04-15", "2025-10-22")
     print("日线数据:")
     for ii, data in enumerate(day_data[:60]):  # 只打印前20条
         print(f"{data['date'].date()}: Open:{data['open']} High:{data['high']} Low:{data['low']} Close:{data['close']} Volume:{data['volume']} Amount:{data['amount']} Spare:{data['spare']}")
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     print("\n...\n")
 
     # 读取分钟线数据
-    min_data = read_tdx_min_file(r"F:\D盘备份1\new_hxzq_hc\vipdoc\bj\minline\bj920476.lc1", "1990-06-30 14:53", "2025-12-31 23:59")
+    min_data = read_tdx_min_file(r"F:\D盘备份1\new_hxzq_hc\vipdoc\bj\fzline\bj920039.lc5", "1990-06-30 14:53", "2025-12-31 23:59")
     print("分钟线数据:")
     record_num = len(min_data)
     for ii, data in enumerate(min_data[:240]):  # 只打印前60条

@@ -3,7 +3,7 @@ from pyfileOpen.OpenTdxMin import read_tdx_min_file, format_minute_datetime_str,
 
 # 使用示例
 def main():
-    file_path = "F:\\D盘备份1\\new_hxzq_hc\\vipdoc\\sh\\fzline\\sh000001.lc5"
+    file_path = r"F:\new_tdx\vipdoc\sz\fzline\SZ300069.lc5"
     start_datetime = None
     end_datetime = None
     # 尝试调用

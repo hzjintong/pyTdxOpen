@@ -78,8 +78,8 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
                 min_record_data = parse_tdx_minute_record( buffer[record_location:record_location + record_size] )
 
                 # 转换解码日期数据格式
-                t0 = format_minute_datetime_obj(min_record_data['datetime'], min_record_data['timestamp'])
                 if start_datetime is not None:
+                    t0 = format_minute_datetime_obj(min_record_data['datetime'], min_record_data['timestamp'])
                     t1 = datetime.strptime(start_datetime, f'%Y/%m/%d %H:%M')
                 if end_datetime is not None:
                     t2 = datetime.strptime(end_datetime, f'%Y/%m/%d %H:%M')
@@ -230,7 +230,7 @@ def validate_datetime_sequence(data_list):
 
 # 使用示例
 def main():
-    filepath = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh171753.lc1"  # 指定需要读取的文件名及其完整路径
+    filepath = r"G:\D盘备份1\new_tdx\vipdoc\sh\fzline\SH600646.lc5"  # 指定需要读取的文件名及其完整路径
     start_date_time = "1990/01/01 09:20"
     end_date_time = "2025/12/31 19:40"
     # 尝试调用

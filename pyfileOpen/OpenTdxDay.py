@@ -179,9 +179,9 @@ def validate_date_sequence(data_list):
 
 # 使用示例
 def main():
-    filepath = "D:/new_hxzq_hc/vipdoc/sh/lday/sh999999.day"  # 指定需要读取的文件名及其完整路径
+    filepath = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sh\lday\SH000896.day"  # 指定需要读取的文件名及其完整路径
     start_date_time = "1990-04-15"
-    end_date_time = "2025-12-31"
+    end_date_time = "2026-12-31"
     #尝试调用
     try:
         # 读取日线数据

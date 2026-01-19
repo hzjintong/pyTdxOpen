@@ -182,9 +182,9 @@ def validate_date_sequence(data_list):
 # 使用示例
 def main():
     # 指定需要读取的文件名及其完整路径，38#8_ATY为美国十年期国债利率，属于扩展行情数据，通达信中代码ATY属于宏观指标数据。历史数据中间有中断
-    filepath = "D:/new_hxzq_hc/vipdoc/ds/lday/38#8_ATY.day"
+    filepath = "D:/new_hxzq_hc/vipdoc/ds/lday/38#9_930994.day"
     start_date_time = "1990-04-15"
-    end_date_time = "2025-11-26"
+    end_date_time = "2026-12-31"
     #尝试调用
     try:
         # 读取日线数据
@@ -204,13 +204,13 @@ def main():
             print("日线数据:")
             i = 0
             for i, data in enumerate(day_data[0:10]):  # 只打印前5条
-                print(f"{format_day_date_obj(data['datetime']).date()}: Open:{data['open']/100} High:{data['high']/100} Low:{data['low']/100} Close:{data['close']/100}"
+                print(f"{format_day_date_obj(data['datetime']).date()}: Open:{data['open']} High:{data['high']} Low:{data['low']} Close:{data['close']}"
                       f" Volume:{data['volume']} Amount:{data['amount']} Spare:{data['spare']}")
             print(f"共打印 {i + 1} 条记录。")
             i = 0
             for i, data in enumerate(day_data[len(day_data)-10:len(day_data)]):  # 只打印后5条
                 print(
-                    f"{format_day_date_obj(data['datetime']).date()}: Open:{data['open']/100} High:{data['high']/100} Low:{data['low']/100} Close:{data['close']/100}"
+                    f"{format_day_date_obj(data['datetime']).date()}: Open:{data['open']} High:{data['high']} Low:{data['low']} Close:{data['close']}"
                     f" Volume:{data['volume']} Amount:{data['amount']} Spare:{data['spare']}")
             print(f"共打印 {i + 1} 条记录。")
 

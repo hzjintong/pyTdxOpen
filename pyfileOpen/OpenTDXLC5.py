@@ -3,9 +3,9 @@ from pyfileOpen.OpenTdxMin import read_tdx_min_file, format_minute_datetime_str,
 
 # import math
 def main():
-    input_path = r"D:\new_hxzq_hc\vipdoc\ds\minline\27#HZ5401.lc1"
-    start_datetime = "20190101 08:30"
-    end_datetime = "20251231 23:59"
+    input_path = r"D:\new_tdx\vipdoc\sh\fzline\SH000014.lc5"
+    start_datetime = "19900101 08:30"
+    end_datetime = "20261231 23:59"
     try:
         #min_data = read_tdx_min_file( input_path, start_datetime, end_datetime )
         min_data = read_tdx_min_file( input_path )

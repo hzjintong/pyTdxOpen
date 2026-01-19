@@ -1,10 +1,10 @@
 import struct
 import os
 import glob
+import csv   # 新增：用于处理CSV输出
 import keyboard
-from datetime import datetime
+from datetime import datetime,timedelta
 from pathlib import Path
-# from datetime import time,timedelta
 
 from MergeTDXday import merge_day_data, read_tdx_day_file, sort_day_time_data, write_tdx_day_file
 
@@ -291,7 +291,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
     批量处理VIPDOC目录下的所有分钟线数据
     :param vipdoc_root_path: VIPDOC的根目录路径，例如 'D:/new_hxzq_hc/vipdoc'
     :param vipdoc_home_path: VIPDOC的源目录路径 'D:/new_tdx/vipdoc'
-    :param target_structures: VIPDOC目录下的结构,市场目录bj,ds,sh,sz,分类数据目录minline,fzline,lday
+    :param target_structures: VIPDOC目录下的结构,市场目录bj（北京）,ds（扩展市场）,sh（上海证券交易所）,sz（深圳证券交易所）,分类数据目录minline（1分钟）,fzline（5分钟）,lday（日线）
     """
     vipdoc_path = Path( vipdoc_root_path )
     vipdoc_path2 = Path( vipdoc_home_path )
