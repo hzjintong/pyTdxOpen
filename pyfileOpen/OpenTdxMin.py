@@ -1,10 +1,33 @@
 import struct
 from datetime import datetime, timedelta
 import holidays
-
-
 # from sympy.physics.units import amount
-# import os
+import os
+import csv   #新增：用于处理CSV输出
+# 定义错误日志文件名
+ERROR_LOG_CSV = r"tdx_minute_parsing_errors.csv"
+
+
+def log_parsing_error(file_path, record_idx, record, error_msg):
+    """
+    将解析错误记录到CSV文件中
+    """
+    file_exists = os.path.isfile(ERROR_LOG_CSV)
+    with open(ERROR_LOG_CSV, 'a', newline='', encoding='utf-8-sig') as f:
+        writer = csv.writer(f)
+        # 如果文件不存在，写入表头
+        if not file_exists:
+            writer.writerow(['文件完整路径', '记录顺序号', '原始日期码(datetime)', '原始时间戳(timestamp)', '错误信息',
+                             '原始记录全量'])
+
+        writer.writerow([
+            file_path,
+            record_idx,
+            record.get('datetime'),
+            record.get('timestamp'),
+            error_msg,
+            str(record)
+        ])
 
 def format_minute_datetime_str(date_code, minutes_past_midnight):
     # 解码计算日期和时间
@@ -70,19 +93,30 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
             if size % record_size != 0 :
                 print(f"警告: 文件大小({size}字节)不是{record_size}字节的整数倍，可能存在数据不完整")
 
+            # 转换解码日期数据格式
+            if start_datetime is not None:
+                try:
+                    t1 = datetime.strptime(start_datetime, f'%Y/%m/%d %H:%M')
+                except Exception as er:
+                    print(f"输入的开始日期格式有异常:{str(er)} {start_datetime}")
+
+            if end_datetime is not None:
+                try:
+                    t2 = datetime.strptime(end_datetime, f'%Y/%m/%d %H:%M')
+                except Exception as er:
+                    print(f"输入的结束日期格式有异常:{str(er)}, {end_datetime}")
+
             for record_location in range(0, size, record_size):
                 if record_location + record_size > size:
                     break
 
                 # 调用新的二进数据解析方法，表达更清晰
                 min_record_data = parse_tdx_minute_record( buffer[record_location:record_location + record_size] )
-
-                # 转换解码日期数据格式
-                if start_datetime is not None:
+                try:
                     t0 = format_minute_datetime_obj(min_record_data['datetime'], min_record_data['timestamp'])
-                    t1 = datetime.strptime(start_datetime, f'%Y/%m/%d %H:%M')
-                if end_datetime is not None:
-                    t2 = datetime.strptime(end_datetime, f'%Y/%m/%d %H:%M')
+                except Exception as er:
+                    log_parsing_error(file_path, record_location, min_record_data, str(er))
+                    continue
 
                 # 过滤指定时间段
                 if (start_datetime is None or t0 >= t1) and \
@@ -95,7 +129,7 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
         print(f"读取文件 {file_path} 时出错: {er}")
         return []
 
-def validate_datetime_sequence(data_list):
+def validate_datetime_sequence(data_list, file_path):
     """
     验证时间序列的连续性
     """
@@ -103,15 +137,32 @@ def validate_datetime_sequence(data_list):
         print("数据列表为空")
         return False
 
-    prev_timestamp = format_minute_datetime_obj(data_list[0]['datetime'], data_list[0]['timestamp'])
     gaps = []
     repe = []
     its_minute = None  # 定义判断是那种分钟数据，并进行标识
     is_valid = True
+    number_of_errors = 0
+    prev_timestamp = None
     cn_holidays = holidays.country_holidays('CN')  # 可指定国家，‘CN’为中国，‘US’为美国，也可指定判断金融市场的假期和休市情况
 
-    for i in range(1, len(data_list)):
-        current_timestamp = format_minute_datetime_obj(data_list[i]['datetime'], data_list[i]['timestamp'])
+    try:
+        prev_timestamp = format_minute_datetime_obj(data_list[0]['datetime'], data_list[0]['timestamp'])
+    except Exception as er:
+        number_of_errors += 1
+        log_parsing_error(file_path, 0,data_list[0],f"日期时间解析异常： {er}")
+
+    for i, record in enumerate(data_list,start=1):
+
+        try:
+            # 尝试解析日期，如果历史数据损坏，这里最容易报错
+            current_timestamp = format_minute_datetime_obj(record['datetime'], record['timestamp'])
+        except Exception as er:
+            # 捕获异常，记录到CSV，增加错误技术，并跳过此条记录基础处理
+            number_of_errors += 1
+            log_parsing_error(file_path, i, record, f"日期时间解析异常： {str(er)}")
+            continue
+
+
         time_diff = ( current_timestamp - prev_timestamp )  # 测试是否要加ABS，是否允许负值
 
         # 检查是否有重复数据
@@ -230,15 +281,15 @@ def validate_datetime_sequence(data_list):
 
 # 使用示例
 def main():
-    filepath = r"G:\D盘备份1\new_tdx\vipdoc\sh\fzline\SH600646.lc5"  # 指定需要读取的文件名及其完整路径
-    start_date_time = "1990/01/01 09:20"
-    end_date_time = "2025/12/31 19:40"
+    filepath = r"F:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh601222.lc1"  # 指定需要读取的文件名及其完整路径
+    # start_date_time = "1990/01/01 09:20"
+    # end_date_time = "2026/12/31 19:40"
     # 尝试调用
     try:
         # 读取1分钟线数据1
         # min_data = read_tdx_min_file(filepath, start_datetime=start_date_time, end_datetime=end_date_time)
         min_data = read_tdx_min_file(filepath)
-        is_valid = validate_datetime_sequence(min_data)
+        is_valid = validate_datetime_sequence(min_data,filepath)
 
         if not is_valid:
             response = input("时间序列存在异常间隔，是否继续列印文件首尾样例数据？(y/n): ")

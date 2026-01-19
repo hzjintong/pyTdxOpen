@@ -126,12 +126,10 @@ def write_tdx_min_file(data_list, output_path):
             # 删除指定的文件
             os.remove(output_path)
             print(f"文件 '{output_path}' 已成功删除。")
-        except FileNotFoundError:
-            print(f"错误：文件 '{output_path}' 不存在。")
-        except PermissionError:
-            print(f"错误：没有权限删除文件 '{output_path}'。")
+        # except FileNotFoundError: print(f"错误：文件 '{output_path}' 不存在。")
+        # except PermissionError: print(f"错误：没有权限删除文件 '{output_path}'。")
         except Exception as e:
-            print(f"删除文件时发生未知错误：{e}")
+            print(f"删除文件时出错：{e}")
         return True
 
     try:
@@ -159,7 +157,7 @@ def write_tdx_min_file(data_list, output_path):
                                           record['spare'])
                 f.write(record_data)
 
-        print(f"已回写入 {len(data_list)} 条记录到 {output_path}")
+        print(f"已回写 {len(data_list)} 条合法记录到 {output_path}")
         return True
     except Exception as e:
         print(f"写入文件 {output_path} 时出错: {e}")
