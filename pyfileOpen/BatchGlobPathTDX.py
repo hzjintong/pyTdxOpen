@@ -54,7 +54,7 @@ def parse_tdx_minute_record( record_buffer ):
             'close': data[5],
             'amount': data[6],
             'volume': data[7],
-            'bei': data[8]
+            'spare': data[8]
         }
     except struct.error as e:
         print(f"解析记录时出错: {e}")
@@ -168,7 +168,7 @@ def write_tdx_min_file(data_list, output_path):
                                           record['close'],
                                           record['amount'],
                                           record['volume'],
-                                          record['bei'])
+                                          record['spare'])
 
                 f.write(record_data)
 

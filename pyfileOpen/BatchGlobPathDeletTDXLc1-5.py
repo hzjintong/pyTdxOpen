@@ -10,7 +10,7 @@ from OpenTdxMin import format_minute_datetime_obj, read_tdx_min_file
 from DeleteTDXLC1 import delete_min_file, read_tdx_min_file2
 # from pyfileOpen.OpenTdxMin import format_minute_datetime_obj
 # 定义错误日志文件名
-ERROR_LOG_CSV = r"G:\D盘备份1\new_tdx\vipdoc\tdx_parsing_errors4.csv"
+ERROR_LOG_CSV = r"E:\new_hxzq\vipdoc\tdx_parsing_errors4.csv"
 
 
 def log_parsing_error(file_path, record_idx, record, error_msg):
@@ -365,7 +365,7 @@ def batch_delete_min_file( vipdoc_root_path ) :
 
 # 使用示例
 def main():
-    tdx_vipdoc_dir = r'G:\D盘备份1\new_tdx\vipdoc'  # 请修改为您的通达信VIPDOC实际路径
+    tdx_vipdoc_dir = r'E:\new_hxzq\vipdoc'  # 请修改为您的通达信VIPDOC实际路径
     start_date_time = '19800101' # 请修改为您需要删除的时间点，这个时间点前的分钟K线数据将删除
     # 为计算整体作业所花费的时间，先记录开始作业的时间
     begin_time = datetime.now()
