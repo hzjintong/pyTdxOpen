@@ -2,9 +2,16 @@ from struct import *
 # import struct
 # from datetime import datetime, date, timedelta
 # from http.client import responses
-
+import keyboard
 # import pandas as pd
 
+# 判断按'Esc'或定义别的组合键如'Ctrl+shift+q'键中断处理过程，可保证不破坏文件
+def check_for_exit():
+    """检查是否按下了退出键"""
+    # if keyboard.is_pressed('CTRL+q') or keyboard.is_pressed('esc'):
+    if keyboard.is_pressed('CTRL+q') :
+        return True
+    return False
 
 def read_tdx_cw_file(file_path):
     """
@@ -37,11 +44,12 @@ def read_tdx_cw_file(file_path):
                 print(data_size)
                 print("%s, %s" % (code, str(cw_info)))
 
-                response =input("是否继续列印下一条（y/n）？")
-                if response == "y":
-                    continue
-                else:
-                    break
+                if check_for_exit():
+                    response =input("是否继续列印下一条（y/n）？")
+                    if response == "y":
+                        continue
+                    else:
+                        break
 
     except Exception as e:
         print(f"读取文件 {file_path} 时出错: {e}")

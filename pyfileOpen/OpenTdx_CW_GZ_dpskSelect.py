@@ -6,7 +6,10 @@ import pandas as pd
 from tqdm import tqdm
 import warnings
 import holidays
-
+'''
+ 获取财务报告期的方法有问题，仅取了最新一期的财务文件，但财务文件会提前生成，如2026年初，2026年的四个季度的文件就已经有了，但文件内实际没有数据
+ 2026年初，2025年的年报大多都还没有发布，所以该程序仅供参考，需要修改
+'''
 warnings.filterwarnings('ignore')
 
 
@@ -567,7 +570,7 @@ class TDXFinancialValuationRanker:
 
         return total_score
 
-    def rank_by_category(self, years=3, top_n=100, category='综合', test_mode=False):
+    def rank_by_category(self, years=5, top_n=100, category='综合', test_mode=False):
         """
         按类别进行排名
 

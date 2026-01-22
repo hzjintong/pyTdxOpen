@@ -412,8 +412,8 @@ def test_example():
 
     # 测试获取平安银行(000001)2021-2022年的财务数据
     stock_code = "000001"
-    start_year = 2021
-    end_year = 2022
+    start_year = 2020
+    end_year = 2025
 
     # 常用指标
     field_indices = [1, 4, 6, 74, 95, 96, 107, 197, 210]

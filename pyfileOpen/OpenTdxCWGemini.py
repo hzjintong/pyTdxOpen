@@ -110,4 +110,4 @@ if __name__ == '__main__':
     my_fields = [1, 4, 11, 95]
 
     # 3. 执行查询 (股票代码, 开始年份, 结束年份, 字段列表)
-    reader.query("000001", 2021, 2022, my_fields)
+    reader.query("000526", 2018, 2019, my_fields)
