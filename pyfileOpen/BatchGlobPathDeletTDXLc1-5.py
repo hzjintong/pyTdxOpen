@@ -10,7 +10,7 @@ from OpenTdxMin import format_minute_datetime_obj, read_tdx_min_file
 from DeleteTDXLC1 import delete_min_file, read_tdx_min_file2
 # from pyfileOpen.OpenTdxMin import format_minute_datetime_obj
 # 定义错误日志文件名
-ERROR_LOG_CSV = r"G:\D盘备份1\new_tdx\vipdoc\tdx_parsing_errors3.csv"
+ERROR_LOG_CSV = r"G:\D盘备份1\new_tdx\vipdoc\tdx_parsing_errors4.csv"
 
 
 def log_parsing_error(file_path, record_idx, record, error_msg):
@@ -127,7 +127,7 @@ def write_tdx_min_file(data_list, output_path):
             os.remove(output_path)
             print(f"文件 '{output_path}' 已成功删除。")
         # except FileNotFoundError: print(f"错误：文件 '{output_path}' 不存在。")
-        # except PermissionError: print(f"错误：没有权限删除文件 '{output_path}'。")
+        # except PermissionError: print(f"错误：没有权限删除文件 {output_path}。")
         except Exception as e:
             print(f"删除文件时出错：{e}")
         return True
@@ -319,9 +319,9 @@ def batch_delete_min_file( vipdoc_root_path ) :
             # 使用 glob 模式匹配，例如：匹配 /sh/minline/*.lc1 和 /sh/minline/*.lc5
             file_list = glob.glob(os.path.join(data_type_path, '*.lc[15]'))
 
-            pattern_lday = os.path.join(data_type_path, '*.day')
+            # pattern_lday = os.path.join(data_type_path, '*.day')
 
-            file_list_day = glob.glob(pattern_lday)
+            # file_list_day = glob.glob(pattern_lday)
 
             # 4. 按股票代码对文件进行分组
             # 例如：将 'sh600000.lc1' 和 'sh600000.lc5' 分为一组，代码为 '600000'
