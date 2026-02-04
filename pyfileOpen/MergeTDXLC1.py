@@ -12,46 +12,52 @@ def merge_minute_data(file1_data, file2_data):
     # 合并所有数据
     all_data = file1_data + file2_data
 
-    print(f"合并后共有 {len(all_data)} 条记录")
+    # print(f"合并后共有 {len(all_data)} 条记录")
     return all_data
 
-def sort_time_data( all_data ):
+def sort_min_time_data( all_data ):
     # 按年月日和时分间戳进行排序
     sorted_data1 = sorted ( all_data, key=lambda x:( x['datetime'], x['timestamp'] ))
 
     # 检查时间连续性并处理不连续的情况
     merged_data = []
+    prev_datetime = None
     prev_timestamp = None
+    number_of_repetitions = 0   #  用于计算重复记录的数量
 
     for i, record in enumerate(sorted_data1):
-        ## current_date = record['datetime']
+        current_datetime = record['datetime']
         current_timestamp = record['timestamp']
 
         # 如果是第一条记录，直接添加
-        if prev_timestamp is None:
+        if prev_timestamp is None and prev_datetime is None:
             merged_data.append(record)
+            prev_datetime = current_datetime
             prev_timestamp = current_timestamp
             continue
 
         # 检查时间是否连续
         time_diff = current_timestamp - prev_timestamp
+        date_diff = current_datetime - prev_datetime
 
-        if time_diff == 0 :  # 如果时间差为0 为重复数据需要剔除
-            print(f"发现重复数据，时间点: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 分钟)")
-            # 剔重复数据，直接跳过记录，不添加到目标数据中
+        # 如果时间差大于1分钟但小于5分钟，可能是正常间隔
+        # 如果时间差很大，说明有不连续的时段，781为13:01，690为11:30，这是午间休息停止交易的时间段，以下是适合1分钟数据的判断
+        # if time_diff > 5 and current_timestamp != 781 and prev_timestamp != 690:  # 假设5分钟以上的间隔视为不连续
+        #    print(f"发现不连续时间段: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 分钟)")
+
+        if time_diff == 0 and date_diff == 0:  # 如果时间差为0 为重复数据需要剔除
+            number_of_repetitions = number_of_repetitions + 1   # 计算重复记录数
+            # print(f"发现重复数据，时间点: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 分钟)")
+            prev_datetime = current_datetime
             prev_timestamp = current_timestamp
             continue
 
-        # 如果时间差大于1分钟但小于5分钟，可能是正常间隔
-        # 如果时间差很大，说明有不连续的时段
-        if time_diff > 5 and current_timestamp != 781 and prev_timestamp != 690:  # 假设5分钟以上的间隔视为不连续
-            print(f"发现不连续时间段: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 分钟)")
-
         # 添加数据
         merged_data.append(record)
+        prev_datetime = current_datetime
         prev_timestamp = current_timestamp
 
-    print(f"合并排序剔重后共有 {len(merged_data)} 条记录")
+    print(f"合并排序剔重后共有 {len(merged_data)} 条记录，剔除{number_of_repetitions}条重复记录。")
     return merged_data
 
 def write_tdx_min_file(data_list, output_path):
@@ -178,7 +184,7 @@ def main():
         print("文件1、2数据合并成功！")
 
     print("正在做时间排序，并剔除重复数据...")
-    sorted_data = sort_time_data( merged_data )
+    sorted_data = sort_min_time_data(merged_data)
     if not sorted_data:
         print("数据排序不成功。")
     else:
@@ -186,7 +192,7 @@ def main():
 
     # 验证时间序列
     print("正在验证时间序列...")
-    is_valid = validate_datetime_sequence(sorted_data)
+    is_valid = validate_datetime_sequence(sorted_data,output_path)
 
     if not is_valid:
         response = input("时间序列存在异常间隔，是否继续写入文件？(y/n): ")

@@ -16,7 +16,7 @@ def merge_day_data(file1_data, file2_data):
     # 合并所有数据
     all_data = file1_data + file2_data
 
-    print(f"合并后共有 {len(all_data)} 条记录")
+    # print(f"合并后共有 {len(all_data)} 条记录")
     return all_data
 
 

@@ -352,6 +352,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
             print(f"从{data_type_path}读取了 {len(file_list_day)}个day文件。")
             print(f"从{data_type_path2}读取了 {len(file_list_day2)}个day文件。")
 
+            """
             for long_file1 in file_list_lc1[:3]:
                 print(long_file1)
 
@@ -369,6 +370,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
 
             for long_file4 in file_list_day2[:3]:
                 print(long_file4)
+            """
 
             file_list_lc1_lc5 = file_list_lc1 + file_list_lc5 # + file_list_lc12 + file_list_lc52
             file_list_lday = file_list_day # + file_list_day2
@@ -464,7 +466,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
 # 使用示例
 def main():
     tdx_vipdoc_dir = "D:/new_hxzq_hc/vipdoc"  # 请修改为您的通达信VIPDOC实际路径
-    taget_vipdoc_path = 'G:/D盘备份1/new_hxzq_hc/vipdoc' # 请修改为您的其他数据的实际路径
+    taget_vipdoc_path = 'F:/D盘备份1/new_hxzq_hc/vipdoc' # 请修改为您的其他数据的实际路径
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     path_structures = {

@@ -1,12 +1,12 @@
-import struct
+# import struct
 import os
 import glob
 import keyboard
 from datetime import datetime
 from pathlib import Path
 # from datetime import time,timedelta
-
 from MergeTDXday import merge_day_data, read_tdx_day_file, sort_day_time_data, write_tdx_day_file
+from MergeTDXLC1 import merge_minute_data, sort_min_time_data, read_tdx_min_file, write_tdx_min_file
 
 # 判断按'Esc'键中断处理过程，可保证不破坏文件
 def check_for_exit():
@@ -16,170 +16,7 @@ def check_for_exit():
         return True
     return False
 
-# 合并两处数据文件中的数据
-
-def parse_tdx_minute_record( record_buffer ):
-    """
-    解析解包通达信分钟线数据记录
-    假设格式为: <2H5f2I (小端字节序)
-    """
-    try:
-        # 解析二进制数据
-        data = struct.unpack('<2H5f2I', record_buffer)
-
-        # 计算日期和时间
-        date_code = data[0]
-        minutes_past_midnight = data[1]
-        # 做数据合并时，无需日期时间的解码，减少计算量，提高速度
-        # year = int(date_code / 2048) + 2004
-        # month_day = date_code % 2048
-        # month = int(month_day / 100)
-        # day = month_day % 100
-
-        # 计算时间
-        # hour = minutes_past_midnight // 60
-        # minute = minutes_past_midnight % 60
-
-        # date_str = f"{year:04d}-{month:02d}-{day:02d}"
-        # time_str = f"{hour:02d}:{minute:02d}:00"  # 秒数通常为00
-        # datetime_str = f"{date_str} {time_str}"
-
-        # 返回解析后的数据
-        return {
-            'datetime': date_code ,
-            'timestamp': minutes_past_midnight,
-            'open': data[2],
-            'high': data[3],
-            'low': data[4],
-            'close': data[5],
-            'amount': data[6],
-            'volume': data[7],
-            'bei': data[8]
-        }
-    except struct.error as e:
-        print(f"解析记录时出错: {e}")
-        return None
-
-def read_tdx_min_file(file_path):
-    """
-    读取通达信分钟线数据文件
-    """
-    data_list = []
-
-    try:
-        with open(file_path, 'rb') as f:
-            buffer = f.read()
-            size = len(buffer)
-            record_size = 32
-
-            for i in range(0, size, record_size):
-                if i + record_size > size:
-                    break
-
-                record = parse_tdx_minute_record( buffer[ i:i + record_size ] )
-                if record:
-                    data_list.append(record)
-
-        print(f"从 {file_path} 读取了 {len(data_list)} 条记录")
-        return data_list
-
-    except Exception as e:
-        print(f"读取文件 {file_path} 时出错: {e}")
-        return []
-
-def merge_minute_data(file1_data, file2_data):
-    """
-    合并两个分钟数据文件的数据
-    """
-    # 合并所有数据
-    all_data = file1_data + file2_data
-
-    print(f"合并后共有 {len(all_data)} 条记录，可能含重复记录。")
-    return all_data
-
-def sort_min_time_data( all_data ):
-    # 按年月日和时分间戳进行排序
-    sorted_data1 = sorted ( all_data, key=lambda x:( x['datetime'], x['timestamp'] ))
-
-    # 检查时间连续性并处理不连续的情况
-    merged_data = []
-    prev_datetime = None
-    prev_timestamp = None
-    number_of_repetitions = 0   #  用于计算重复记录的数量
-
-    for i, record in enumerate(sorted_data1):
-        current_datetime = record['datetime']
-        current_timestamp = record['timestamp']
-
-        # 如果是第一条记录，直接添加
-        if prev_timestamp is None and prev_datetime is None:
-            merged_data.append(record)
-            prev_datetime = current_datetime
-            prev_timestamp = current_timestamp
-            continue
-
-        # 检查时间是否连续
-        time_diff = current_timestamp - prev_timestamp
-        date_diff = current_datetime - prev_datetime
-
-        # 如果时间差大于1分钟但小于5分钟，可能是正常间隔
-        # 如果时间差很大，说明有不连续的时段，781为13:01，690为11:30，这是午间休息停止交易的时间段，以下是适合1分钟数据的判断
-        # if time_diff > 5 and current_timestamp != 781 and prev_timestamp != 690:  # 假设5分钟以上的间隔视为不连续
-        #    print(f"发现不连续时间段: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 分钟)")
-
-        if time_diff == 0 and date_diff == 0:  # 如果时间差为0 为重复数据需要剔除
-            number_of_repetitions = number_of_repetitions + 1   # 计算重复记录数
-            # print(f"发现重复数据，时间点: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 分钟)")
-            prev_datetime = current_datetime
-            prev_timestamp = current_timestamp
-            continue
-
-        # 添加数据
-        merged_data.append(record)
-        prev_datetime = current_datetime
-        prev_timestamp = current_timestamp
-
-    print(f"合并排序剔重后共有 {len(merged_data)} 条记录，剔除{number_of_repetitions}条重复记录。")
-    return merged_data
-
-def write_tdx_min_file(data_list, output_path):
-    """
-    将数据写入通达信分钟线数据文件
-    """
-
-    try:
-        # 确保输出目录存在
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-        with open(output_path, 'wb') as f:
-            for record in data_list:
-                # 将日期时间转换回通达信格式，因需要原样写回原格式文件，所以考虑性能不做转换
-                # record_date = record['datetime']
-
-                # 提取时间部分
-                # minutes_since_midnight = record['timestamp']
-
-                # 打包数据
-                record_data = struct.pack('<2H5f2I',
-                                          record['datetime'],
-                                          record['timestamp'],
-                                          record['open'],
-                                          record['high'],
-                                          record['low'],
-                                          record['close'],
-                                          record['amount'],
-                                          record['volume'],
-                                          record['bei'])
-
-                f.write(record_data)
-
-        print(f"已写入 {len(data_list)} 条记录到 {output_path}")
-        return True
-    except Exception as e:
-        print(f"写入文件 {output_path} 时出错: {e}")
-        return False
-
-# 假设这是您之前写好的合并函数
+# 假设这是您之前写好的合并两个文件的数据函数
 def merge_min_data(input_filename, output_filename):
     """
     合并通达信分钟线.lc1或.lc5文件
@@ -198,19 +35,19 @@ def merge_min_data(input_filename, output_filename):
         return
 
     # 合并数据
-    print("正在合并文件1、2数据...")
+    # print("正在合并文件1、2数据...")
     merged_data = merge_minute_data(file1_data, file2_data)
-    if not merged_data:
-        print("合并文件1、2数据不成功。")
-    else:
-        print("文件1、2数据合并成功！")
+    # if not merged_data:
+    #     print("合并文件1、2数据不成功。")
+    # else:
+    #     print("文件1、2数据合并成功！")
 
-    print("正在做时间排序，并剔除重复数据...")
+    # print("正在做时间排序，并剔除重复数据...")
     sorted_data = sort_min_time_data(merged_data)
-    if not sorted_data:
-        print("数据排序不成功。")
-    else:
-        print("时间排序剔重成功完成！")
+    # if not sorted_data:
+    #     print("数据排序不成功。")
+    # else:
+    #     print("时间排序剔重成功完成！")
 
     # 例如：逐个读取input_files中的文件，解析并合并数据，最后写入output_filename
     # 写入合并后的文件
@@ -238,10 +75,10 @@ def merge_lday_data(input_filename, output_filename):
     :param output_filename: 合并后输出的文件路径
     """
     # 这里填入您之前已经写好的合并逻辑
-    print("正在读取第一个文件...")
+    # print("正在读取第一个文件...")
     file1_data = read_tdx_day_file(input_filename)
 
-    print("正在读取第二个文件...")
+    # print("正在读取第二个文件...")
     file2_data = read_tdx_day_file(output_filename)
 
     if not file1_data and not file2_data:
@@ -249,19 +86,19 @@ def merge_lday_data(input_filename, output_filename):
         return
 
     # 合并数据
-    print("正在合并文件1、2数据...")
+    # print("正在合并文件1、2数据...")
     merged_data = merge_day_data(file1_data, file2_data)
-    if not merged_data:
-        print("合并文件1、2数据不成功。")
-    else:
-        print("文件1、2数据合并成功！")
+    # if not merged_data:
+    #     print("合并文件1、2数据不成功。")
+    # else:
+    #     print("文件1、2数据合并成功！")
 
-    print("正在做时间排序，并剔除重复数据...")
+    # print("正在做时间排序，并剔除重复数据...")
     sorted_data = sort_day_time_data(merged_data)
-    if not sorted_data:
-        print("数据排序不成功。")
-    else:
-        print("时间排序剔重成功完成！")
+    # if not sorted_data:
+    #     print("数据排序不成功。")
+    # else:
+    #     print("时间排序剔重成功完成！")
 
     # 例如：逐个读取input_files中的文件，解析并合并数据，最后写入output_filename
     # 写入合并后的文件
@@ -333,43 +170,38 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
             # 3. 在目标目录下查找所有的 .lc1 和 .lc5 文件
             # 使用 glob 模式匹配，例如：匹配 /sh/minline/*.lc1 和 /sh/minline/*.lc5
             pattern_lc1 = os.path.join(data_type_path, '*.lc1')
-            pattern_lc12 = os.path.join(data_type_path2, '*.lc1')
+            # pattern_lc12 = os.path.join(data_type_path2, '*.lc1')
             pattern_lc5 = os.path.join(data_type_path, '*.lc5')
-            pattern_lc52 = os.path.join(data_type_path2, '*.lc5')
+            # pattern_lc52 = os.path.join(data_type_path2, '*.lc5')
             pattern_lday = os.path.join(data_type_path, '*.day')
-            pattern_lday2 = os.path.join(data_type_path2, '*.day')
+            # pattern_lday2 = os.path.join(data_type_path2, '*.day')
 
             file_list_lc1 = glob.glob(pattern_lc1)
-            file_list_lc12 = glob.glob(pattern_lc12)
+            # file_list_lc12 = glob.glob(pattern_lc12)
             file_list_lc5 = glob.glob(pattern_lc5)
-            file_list_lc52 = glob.glob(pattern_lc52)
+            # file_list_lc52 = glob.glob(pattern_lc52)
             file_list_day = glob.glob(pattern_lday)
-            file_list_day2 = glob.glob(pattern_lday2)
-
+            # file_list_day2 = glob.glob(pattern_lday2)
+            """
             print(f"从{data_type_path}读取了 {len(file_list_lc1)}个lc1文件。")
             print(f"从{data_type_path2}读取了 {len(file_list_lc12)}个lc1文件。")
             print(f"从{data_type_path}读取了 {len(file_list_lc5)}个lc5文件。")
             print(f"从{data_type_path2}读取了 {len(file_list_lc52)}个lc5文件。")
             print(f"从{data_type_path}读取了 {len(file_list_day)}个day文件。")
             print(f"从{data_type_path2}读取了 {len(file_list_day2)}个day文件。")
-
-            for long_file1 in file_list_lc1[:3]:
+            """
+            """for long_file1 in file_list_lc1[:3]:
                 print(long_file1)
-
             for long_file2 in file_list_lc12[:3]:
                 print(long_file2)
-
             for long_file3 in file_list_lc5[:3]:
                 print(long_file3)
-
             for long_file4 in file_list_lc52[:3]:
                 print(long_file4)
-
             for long_file4 in file_list_day[:3]:
                 print(long_file4)
-
             for long_file4 in file_list_day2[:3]:
-                print(long_file4)
+                print(long_file4)"""
 
             file_list_lc1_lc5 = file_list_lc1 + file_list_lc5 # + file_list_lc12 + file_list_lc52
             file_list_lday = file_list_day # + file_list_day2
