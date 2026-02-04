@@ -205,8 +205,8 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     target_structures = {
-        #'bj': ['minline', 'fzline', 'lday'],
-        #'ds': ['minline', 'fzline', 'lday'],
+        'bj': ['minline', 'fzline', 'lday'],
+        'ds': ['minline', 'fzline', 'lday'],
         'sh': ['minline', 'fzline', 'lday'],
         'sz': ['minline', 'fzline', 'lday']
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
@@ -295,8 +295,8 @@ def batch_delete_min_file( vipdoc_root_path ) :
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     target_structures = {
-        #'bj': ['minline', 'fzline', 'lday'],
-        #'ds': ['minline', 'fzline', 'lday'],
+        'bj': ['minline', 'fzline', 'lday'],
+        'ds': ['minline', 'fzline', 'lday'],
         'sh': ['minline', 'fzline', 'lday'],
         'sz': ['minline', 'fzline', 'lday']
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
