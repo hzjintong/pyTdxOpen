@@ -10,7 +10,7 @@ from OpenTdxMin import format_minute_datetime_obj, read_tdx_min_file
 from DeleteTDXLC1 import delete_min_file, read_tdx_min_file2
 # from pyfileOpen.OpenTdxMin import format_minute_datetime_obj
 # 定义错误日志文件名
-ERROR_LOG_CSV = r"E:\new_hxzq\vipdoc\tdx_parsing_errors4.csv"
+ERROR_LOG_CSV = r"F:\D盘备份1\new_hxzq_hc\vipdoc\All_csv\tdx_parsing_errors.csv"
 
 
 def log_parsing_error(file_path, record_idx, record, error_msg):
@@ -109,7 +109,7 @@ def sort_delete_min_time_data( all_data, start_dt, file_path ):
     if number_of_errors > 0:
         print(f"!!! 在文件 {file_path} 中发现 {number_of_errors} 条异常记录，已记录至 CSV。")
 
-    print(f"处理完成：保留 {len(deleted_data)} 条记录，剔除 {number_of_repetitions} 条重复记录，删除了 {number_of_deleted} 条异常时间记录。")
+    print(f"处理完成：保留 {len(deleted_data)} 条记录，剔除 {number_of_repetitions} 条重复记录，删除了 {number_of_deleted} 条早于设点时间记录。")
     return deleted_data
 
 
@@ -205,8 +205,8 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     target_structures = {
-        'bj': ['minline', 'fzline', 'lday'],
-        'ds': ['minline', 'fzline', 'lday'],
+        #'bj': ['minline', 'fzline', 'lday'],
+        #'ds': ['minline', 'fzline', 'lday'],
         'sh': ['minline', 'fzline', 'lday'],
         'sz': ['minline', 'fzline', 'lday']
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
@@ -295,8 +295,8 @@ def batch_delete_min_file( vipdoc_root_path ) :
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     target_structures = {
-        'bj': ['minline', 'fzline', 'lday'],
-        'ds': ['minline', 'fzline', 'lday'],
+        #'bj': ['minline', 'fzline', 'lday'],
+        #'ds': ['minline', 'fzline', 'lday'],
         'sh': ['minline', 'fzline', 'lday'],
         'sz': ['minline', 'fzline', 'lday']
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
@@ -365,7 +365,7 @@ def batch_delete_min_file( vipdoc_root_path ) :
 
 # 使用示例
 def main():
-    tdx_vipdoc_dir = r'E:\new_hxzq\vipdoc'  # 请修改为您的通达信VIPDOC实际路径
+    tdx_vipdoc_dir = r'F:\D盘备份1\new_hxzq_hc\vipdoc'  # 请修改为您的通达信VIPDOC实际路径
     start_date_time = '19800101' # 请修改为您需要删除的时间点，这个时间点前的分钟K线数据将删除
     # 为计算整体作业所花费的时间，先记录开始作业的时间
     begin_time = datetime.now()
