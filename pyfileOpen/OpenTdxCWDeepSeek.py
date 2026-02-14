@@ -312,7 +312,7 @@ def main():
     # 示例2: 获取特定股票的财务数据
     stock_code = input("请输入股票代码 (如 000001): ").strip()
     start_year = int(input("请输入起始年份 (如 2021): "))
-    end_year = int(input("请输入结束年份 (如 2022): "))
+    end_year = int(input("请输入结束年份 (如 2024): "))
 
     # 常用财务指标字段
     common_fields = [
