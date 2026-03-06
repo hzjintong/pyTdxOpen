@@ -64,6 +64,22 @@ def write_tdx_min_file(data_list, output_path):
     """
     将数据写入通达信分钟线数据文件
     """
+
+    if len( data_list ) == 0 :
+        print("数据长度为 0 ，删除文件。")
+
+        try:
+            # 确保输出目录存在
+            # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            # 删除指定的文件
+            os.remove(output_path)
+            print(f"文件 '{output_path}' 已成功删除。")
+        # except FileNotFoundError: print(f"错误：文件 '{output_path}' 不存在。")
+        # except PermissionError: print(f"错误：没有权限删除文件 {output_path}。")
+        except Exception as e:
+            print(f"删除文件时出错：{e}")
+        return True
+
     try:
         # 确保输出目录存在
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -156,10 +172,10 @@ def validate_time_sequence(data_list):
 
 def main():
     # 配置输入和输出路径
-    input_file1 = r"D:\new_hxzq_hc\vipdoc\ds\minline\27#HZ5017.lc1"  # 替换为第一个文件路径
-    input_file2 = r"D:\new_tdx\vipdoc\ds\minline\27#HZ5017.lc1"  # 替换为第二个文件路径
-    output_dir =  r"g:/D盘备份1/new_hxzq_hc/vipdoc/ds/minline"  # 替换为输出目录
-    output_filename = "27#HZ5017.lc1"  # 输出文件名
+    input_file1 = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh113565.lc1"  # 替换为第一个文件路径
+    input_file2 = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh113565.lc1"  # 替换为第二个文件路径
+    output_dir =  r"G:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline"  # 替换为输出目录
+    output_filename = "sh113565.lc1"  # 输出文件名
 
     # 拼装目录名和文件名成为一个完整的文件路径名
     output_path = os.path.join(output_dir, output_filename)

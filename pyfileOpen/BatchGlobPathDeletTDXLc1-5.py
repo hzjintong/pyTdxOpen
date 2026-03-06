@@ -9,6 +9,7 @@ import keyboard
 from OpenTdxMin import format_minute_datetime_obj, read_tdx_min_file
 from DeleteTDXLC1 import delete_min_file, read_tdx_min_file2
 # from pyfileOpen.OpenTdxMin import format_minute_datetime_obj
+from pyfileOpen.MergeTDXLC1 import write_tdx_min_file
 # 定义错误日志文件名
 ERROR_LOG_CSV = r"F:\D盘备份1\new_hxzq_hc\vipdoc\All_csv\tdx_parsing_errors.csv"
 
@@ -42,7 +43,7 @@ def check_for_exit():
         return True
     return False
 
-def sort_delete_min_time_data( all_data, start_dt, file_path ):
+def sort_delete_min_time_data(all_data, start_dt, input_file_path):
     # 按年月日和时分间戳进行排序
     sorted_data1 = sorted ( all_data, key=lambda x:( x['datetime'], x['timestamp'] ))
 
@@ -63,7 +64,7 @@ def sort_delete_min_time_data( all_data, start_dt, file_path ):
         except Exception as e:
             # 捕获异常，记录到CSV，增加错误计数，并跳过此条记录继续处理
             number_of_errors += 1
-            log_parsing_error(file_path, i, record, f"日期解析异常: {str(e)}")
+            log_parsing_error(input_file_path, i, record, f"日期解析异常: {str(e)}")
             continue
 
         if current_date < start_dt :  # 如果当前记录的时间小于需要的起始时间，为不需要的数据，跳过即删除
@@ -73,13 +74,13 @@ def sort_delete_min_time_data( all_data, start_dt, file_path ):
         # 大于当前日期肯定是个错误，也要进行删除
         if current_date > datetime.now():
             number_of_errors += 1
-            log_parsing_error(file_path, i, record, f"日期解析异常（大于当前日期）: {str(current_date)}")
+            log_parsing_error(input_file_path, i, record, f"日期解析异常（大于当前日期）: {str(current_date)}")
             continue
 
         # 对于价格异常进行处理，小于0.001
         if record['open'] < 0 or record['high'] < 0 or record['low'] < 0 or record['close'] < 0 :
             number_of_errors += 1
-            log_parsing_error(file_path, i, record, f"有价格异常（小于0）")
+            log_parsing_error(input_file_path, i, record, f"有价格异常（小于0）")
             continue
 
         # 如果是第一条记录，直接添加
@@ -107,61 +108,10 @@ def sort_delete_min_time_data( all_data, start_dt, file_path ):
         prev_timestamp = current_timestamp
 
     if number_of_errors > 0:
-        print(f"!!! 在文件 {file_path} 中发现 {number_of_errors} 条异常记录，已记录至 CSV。")
+        print(f"!!! 在文件 {input_file_path} 中发现 {number_of_errors} 条异常记录，已记录至 CSV。")
 
     print(f"处理完成：保留 {len(deleted_data)} 条记录，剔除 {number_of_repetitions} 条重复记录，删除了 {number_of_deleted} 条早于设点时间记录。")
     return deleted_data
-
-
-def write_tdx_min_file(data_list, output_path):
-    """
-    将数据写入通达信分钟线数据文件
-    """
-    if len( data_list ) == 0 :
-        print("数据长度为 0 ，删除文件。")
-
-        try:
-            # 确保输出目录存在
-            # os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            # 删除指定的文件
-            os.remove(output_path)
-            print(f"文件 '{output_path}' 已成功删除。")
-        # except FileNotFoundError: print(f"错误：文件 '{output_path}' 不存在。")
-        # except PermissionError: print(f"错误：没有权限删除文件 {output_path}。")
-        except Exception as e:
-            print(f"删除文件时出错：{e}")
-        return True
-
-    try:
-        # 确保输出目录存在
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-        with open(output_path, 'wb') as f:
-            for record in data_list:
-                # 将日期时间转换回通达信格式，因需要原样写回原格式文件，所以考虑性能前期就不做转换
-                # record_date = record['datetime']
-
-                # 提取时间部分
-                # minutes_since_midnight = record['timestamp']
-
-                # 打包数据
-                record_data = struct.pack('<2H5f2I',
-                                          record['datetime'],
-                                          record['timestamp'],
-                                          record['open'],
-                                          record['high'],
-                                          record['low'],
-                                          record['close'],
-                                          record['amount'],
-                                          record['volume'],
-                                          record['spare'])
-                f.write(record_data)
-
-        print(f"已回写 {len(data_list)} 条合法记录到 {output_path}")
-        return True
-    except Exception as e:
-        print(f"写入文件 {output_path} 时出错: {e}")
-        return False
 
 # 假设这是您之前写好的合并函数
 def delete_min_data(input_filename, start_dt):
@@ -229,8 +179,7 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
 
             # 3. 在目标目录下获取所有的 .lc1 和 .lc5 文件
             # 使用 glob 模式匹配，例如：匹配 /sh/minline/*.lc1 和 /sh/minline/*.lc5
-            files_to_process = glob.glob(os.path.join(data_type_path, "*.lc1")) + \
-                               glob.glob(os.path.join(data_type_path, "*.lc5"))
+            files_to_process = glob.glob(os.path.join(data_type_path, "*.lc[15]"))
             pattern_lday = os.path.join(data_type_path, '*.day')
 
             file_list_day = glob.glob(pattern_lday)
@@ -318,10 +267,6 @@ def batch_delete_min_file( vipdoc_root_path ) :
             # 3. 在目标目录下查找所有的 .lc1 和 .lc5 文件
             # 使用 glob 模式匹配，例如：匹配 /sh/minline/*.lc1 和 /sh/minline/*.lc5
             file_list = glob.glob(os.path.join(data_type_path, '*.lc[15]'))
-
-            # pattern_lday = os.path.join(data_type_path, '*.day')
-
-            # file_list_day = glob.glob(pattern_lday)
 
             # 4. 按股票代码对文件进行分组
             # 例如：将 'sh600000.lc1' 和 'sh600000.lc5' 分为一组，代码为 '600000'

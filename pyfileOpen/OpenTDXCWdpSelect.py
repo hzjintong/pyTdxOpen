@@ -231,17 +231,17 @@ class TDXStockRanker:
         # 计算综合得分
         # 权重分配
         weights = {
-            'roe': 0.25,  # 盈利能力
-            'roa': 0.15,
-            'profit_margin': 0.10,
-            'gross_margin': 0.10,
-            'revenue_growth': 0.10,  # 成长能力
-            'profit_growth': 0.10,
-            'operating_cash_flow': 0.05,  # 现金流
-            'current_ratio': 0.05,  # 偿债能力
-            'quick_ratio': 0.05,
-            'asset_turnover': 0.03,  # 运营效率
-            'debt_ratio': 0.02,  # 财务杠杆
+            'roe': 0.25,  # 盈利能力，净资产收益率
+            'roa': 0.15,  # 盈利能力，总资产净利率
+            'profit_margin': 0.10,  # 盈利能力，销售净利率
+            'gross_margin': 0.10,  # 盈利能力，销售毛利率
+            'revenue_growth': 0.10,  # 成长能力，营业收入增长率
+            'profit_growth': 0.10,  # 成长能力，净利润增长率
+            'operating_cash_flow': 0.05,  # 现金流，经营活动产生的现金流量净额
+            'current_ratio': 0.05,  # 偿债能力，流动比率
+            'quick_ratio': 0.05,  #偿债能力，速动比率
+            'asset_turnover': 0.03,  # 运营效率，总资产周转率
+            'debt_ratio': 0.02,  # 财务杠杆，资产负债率
         }
 
         # 标准化处理

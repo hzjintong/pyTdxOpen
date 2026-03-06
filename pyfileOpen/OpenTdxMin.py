@@ -35,6 +35,8 @@ def format_minute_datetime_str(date_code, minutes_past_midnight):
     year = int (date_code / 2048) + 2004
     month = int (date_code % 2048) // 100
     day = int (date_code % 2048) % 100
+    if year > int( datetime.now().year ) :
+        year = year - 32
     # 解码计算时间
     hour = minutes_past_midnight // 60
     minute = minutes_past_midnight % 60
@@ -281,7 +283,7 @@ def validate_datetime_sequence(data_list, file_path):
 
 # 使用示例
 def main():
-    filepath = r"F:\D盘备份1\new_hxzq_hc\vipdoc\sh\minline\sh601222.lc1"  # 指定需要读取的文件名及其完整路径
+    filepath = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sz\fzline\sz000006.lc5"  # 指定需要读取的文件名及其完整路径
     # start_date_time = "1990/01/01 09:20"
     # end_date_time = "2026/12/31 19:40"
     # 尝试调用
@@ -303,13 +305,13 @@ def main():
             i = 0
             for i, data in enumerate(min_data[0:245]):  # 只打印前241条
                 min_line_datetime = format_minute_datetime_str(data['datetime'], data['timestamp'])
-                print(f"{min_line_datetime}: Open: {data['open']} High: {data['high']} Low: {data['low']} Close: {data['close']}"
+                print(f"{min_line_datetime},date_code:{data['datetime']}: Open: {data['open']} High: {data['high']} Low: {data['low']} Close: {data['close']}"
                       f" Volume: {data['volume']} Amount: {data['amount']} Spare: {data['spare']}")
             print(f"已列印 { i + 1 } 条记录。")
             i = 0
             for i, data in enumerate(min_data[len(min_data)-245:len(min_data)]):  # 只打印后241条
                 min_line_datetime = format_minute_datetime_str(data['datetime'], data['timestamp'])
-                print(f"{min_line_datetime}: Open: {data['open']} High: {data['high']} Low: {data['low']} Close: {data['close']}"
+                print(f"{min_line_datetime},date_code:{data['datetime']}: Open: {data['open']} High: {data['high']} Low: {data['low']} Close: {data['close']}"
                       f" Volume: {data['volume']} Amount: {data['amount']} Spare: {data['spare']}")
             print(f"已列印 { i + 1 } 条记录。")
         else:
