@@ -1,9 +1,9 @@
 import struct
 import os
 import glob
-import csv   # 新增：用于处理CSV输出
+# import csv   # 新增：用于处理CSV输出
 import keyboard
-from datetime import datetime,timedelta
+from datetime import datetime # ,timedelta
 from pathlib import Path
 
 from MergeTDXday import merge_day_data, read_tdx_day_file, sort_day_time_data, write_tdx_day_file
@@ -466,7 +466,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
 # 使用示例
 def main():
     tdx_vipdoc_dir = "D:/new_hxzq_hc/vipdoc"  # 请修改为您的通达信VIPDOC实际路径
-    taget_vipdoc_path = 'F:/D盘备份1/new_hxzq_hc/vipdoc' # 请修改为您的其他数据的实际路径
+    taget_vipdoc_path = 'G:/D盘备份1/new_hxzq_hc/vipdoc' # 请修改为您的其他数据的实际路径
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     path_structures = {
