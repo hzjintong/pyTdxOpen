@@ -51,7 +51,7 @@ class TDXFinancialValuationRanker:
                         continue
 
                 # 识别字段行：数字--字段名 或 数字.--字段名
-                field_match = re.match(r'(\d+)(?:\.)?--(.+)', line)
+                field_match = re.match(r'(\d+)\.?--(.+)', line)
                 if field_match:
                     field_id = int(field_match.group(1))
                     field_name = field_match.group(2).strip()
@@ -68,7 +68,8 @@ class TDXFinancialValuationRanker:
                 self.field_names[i] = f"字段{i}"
                 self.field_descriptions[i] = f"字段{i}"
 
-    def get_market_from_code(self, stock_code):
+    @staticmethod
+    def get_market_from_code(stock_code):
         """根据股票代码判断市场"""
         if stock_code.startswith('6') or stock_code.startswith('90') or stock_code.startswith('99'):
             return 'sh'
@@ -82,7 +83,7 @@ class TDXFinancialValuationRanker:
     def get_day_file_path(self, stock_code):
         """获取日线数据文件路径"""
         market = self.get_market_from_code(stock_code)
-        market_prefix = ''
+        # market_prefix = ''
         if market == 'sh':
             market_prefix = 'SH'
         elif market == 'sz':
@@ -199,7 +200,8 @@ class TDXFinancialValuationRanker:
 
                         if record_data:
                             break
-                    except Exception:
+                    except Exception as e:
+                        print(f'获取股票收盘价出现错误：{e}')
                         continue
 
                 # 如果仍然无法解析，尝试读取第一条记录
@@ -334,7 +336,8 @@ class TDXFinancialValuationRanker:
             print(f"解析文件 {file_path} 时出错: {e}")
             return {}
 
-    def calculate_valuation_metrics(self, stock_data, price_data):
+    @staticmethod
+    def calculate_valuation_metrics(stock_data, price_data):
         """
         计算估值指标
 
@@ -423,7 +426,8 @@ class TDXFinancialValuationRanker:
         return metrics
 
     # ==================== 修改点：calculate_comprehensive_score 利用多期数据计算增长率 ====================
-    def calculate_comprehensive_score(self, stock_data_dict, valuation_metrics):
+    @staticmethod
+    def calculate_comprehensive_score(stock_data_dict, valuation_metrics):
         """
         计算股票综合得分（财务+估值）
 
@@ -523,19 +527,19 @@ class TDXFinancialValuationRanker:
 
         # PE（市盈率）：越低越好，使用倒数
         pe = valuation_metrics.get('pe', 0)
-        valuation_scores['pe'] = 1 / pe if pe > 0 and pe < 1e6 else 0
+        valuation_scores['pe'] = 1 / pe if 0 < pe < 1e6 else 0
 
         # PB（市净率）：越低越好，使用倒数
         pb = valuation_metrics.get('pb', 0)
-        valuation_scores['pb'] = 1 / pb if pb > 0 and pb < 1e6 else 0
+        valuation_scores['pb'] = 1 / pb if 0 < pb < 1e6 else 0
 
         # PS（市销率）：越低越好，使用倒数
         ps = valuation_metrics.get('ps', 0)
-        valuation_scores['ps'] = 1 / ps if ps > 0 and ps < 1e6 else 0
+        valuation_scores['ps'] = 1 / ps if 0 < ps < 1e6 else 0
 
         # PEG（市盈增长比）：越低越好，使用倒数
         peg = valuation_metrics.get('peg', 0)
-        valuation_scores['peg'] = 1 / peg if peg > 0 and peg < 1e6 else 0
+        valuation_scores['peg'] = 1 / peg if 0 < peg < 1e6 else 0
 
         # 股息率：越高越好，直接使用
         dividend_yield = valuation_metrics.get('dividend_yield', 0)
@@ -703,9 +707,9 @@ class TDXFinancialValuationRanker:
                 peg = valuation_metrics.get('peg', 0)
                 dividend_yield = valuation_metrics.get('dividend_yield', 0)
 
-                pe_score = 1 / pe if pe > 0 and pe < 1e6 else 0
-                pb_score = 1 / pb if pb > 0 and pb < 1e6 else 0
-                peg_score = 1 / peg if peg > 0 and peg < 1e6 else 0
+                pe_score = 1 / pe if 0 < pe < 1e6 else 0
+                pb_score = 1 / pb if 0 < pb < 1e6 else 0
+                peg_score = 1 / peg if 0 < peg < 1e6 else 0
                 dividend_score = min(dividend_yield, 10) / 10  # 标准化
 
                 score = pe_score * 0.3 + pb_score * 0.3 + peg_score * 0.2 + dividend_score * 0.2
@@ -767,7 +771,7 @@ class TDXFinancialValuationRanker:
         df = pd.DataFrame(results)
         return df
 
-    def export_ranking_to_excel(self, dfs_dict, filename="股票综合排名.xlsx"):
+    def export_ranking_to_excel(self, dfs_dict, filename="股票综合排名.xlsx", year=1):
         """导出排名结果到Excel文件"""
         if not dfs_dict:
             print("没有数据可导出")
@@ -789,7 +793,8 @@ class TDXFinancialValuationRanker:
                                 try:
                                     if len(str(cell.value)) > max_length:
                                         max_length = len(str(cell.value))
-                                except:
+                                except Exception as e:
+                                    print(f'导出到xlsx文件的字段有异常：{e}')
                                     pass
                             adjusted_width = min(max_length + 2, 30)
                             worksheet.column_dimensions[column_letter].width = adjusted_width
@@ -827,6 +832,7 @@ class TDXFinancialValuationRanker:
                         '财务数据来源：通达信财务数据',
                         '股价数据来源：通达信日线数据',
                         '排名规则：得分越高表示综合表现越好',
+                        f'财务数据使用：近 {year} 年',
                         f'生成时间：{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
                     ]
                 })
@@ -860,7 +866,7 @@ def main():
 
     # 测试日线数据读取
     print("\n测试日线数据读取...")
-    test_codes = ['000001', '000002', '600000']
+    test_codes = ['000001', '000002', '600000', '300001', '200011', '920000', '920992', '999999']
     for code in test_codes:
         price_data = ranker.get_latest_price_data(code)
         if price_data:
@@ -886,7 +892,7 @@ def main():
     years = 1 if test_mode else int(input("使用最近几年的数据? (默认1): ") or "1")
     top_n = 20 if test_mode else int(input("显示前多少名? (默认50): ") or "50")
 
-    categories_to_run = []
+    # categories_to_run = []
 
     if choice == '1':
         categories_to_run = ['综合']
@@ -923,7 +929,7 @@ def main():
         export = input("\n是否导出排名结果? (y/n): ").strip().lower()
         if export == 'y':
             filename = input("请输入导出文件名 (默认: 股票综合排名.xlsx): ") or "股票综合排名.xlsx"
-            ranker.export_ranking_to_excel(results, filename)
+            ranker.export_ranking_to_excel(results, filename, years)
 
 
 def quick_ranking():
