@@ -1,11 +1,11 @@
 from struct import unpack, calcsize
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime # , timedelta
 import pandas as pd
 from tqdm import tqdm
 import warnings
-import holidays
+# import holidays
 
 warnings.filterwarnings('ignore')
 
@@ -48,7 +48,7 @@ class TDXFinancialValuationRanker:
                         continue
 
                 # 识别字段行：数字--字段名 或 数字.--字段名
-                field_match = re.match(r'(\d+)(?:\.)?--(.+)', line)
+                field_match = re.match(r'(\d+)\.?--(.+)', line)
                 if field_match:
                     field_id = int(field_match.group(1))
                     field_name = field_match.group(2).strip()
@@ -65,7 +65,8 @@ class TDXFinancialValuationRanker:
                 self.field_names[i] = f"字段{i}"
                 self.field_descriptions[i] = f"字段{i}"
 
-    def get_market_from_code(self, stock_code):
+    @staticmethod
+    def get_market_from_code(stock_code):
         """根据股票代码判断市场"""
         if stock_code.startswith('6') or stock_code.startswith('90') or stock_code.startswith('99'):
             return 'sh'
@@ -175,7 +176,8 @@ class TDXFinancialValuationRanker:
 
         return [os.path.join(self.cw_dir, f[0]) for f in latest_files]
 
-    def parse_all_stocks_in_file(self, file_path, field_indices=None):
+    @staticmethod
+    def parse_all_stocks_in_file(file_path, field_indices=None):
         """
         解析单个财务数据文件中的所有股票
 
@@ -244,7 +246,8 @@ class TDXFinancialValuationRanker:
             print(f"解析文件 {file_path} 时出错: {e}")
             return {}
 
-    def calculate_valuation_metrics(self, stock_data, price_data):
+    @staticmethod
+    def calculate_valuation_metrics(stock_data, price_data):
         """
         计算估值指标
 
@@ -330,7 +333,8 @@ class TDXFinancialValuationRanker:
 
         return metrics
 
-    def calculate_comprehensive_score(self, stock_data_dict, valuation_metrics):
+    @staticmethod
+    def calculate_comprehensive_score(stock_data_dict, valuation_metrics):
         """
         计算股票综合得分（财务+估值）
 

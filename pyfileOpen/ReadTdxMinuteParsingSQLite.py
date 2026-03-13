@@ -9,7 +9,7 @@ import math
 from collections import defaultdict
 
 # ===== 配置 =====
-ERROR_LOG_CSV = r"tdx_minute_parsing_errors.csv"
+ERROR_LOG_CSV = r"G:\pyfileOpen-20251230\pyfileOpen\tdx_parsing_errors.csv"
 BACKUP_BEFORE_RESTORE = True
 DB_PATH = "recovery_temp.db"          # 临时 SQLite 数据库文件
 BATCH_SIZE = 10000                     # 每批插入的记录数
@@ -27,7 +27,8 @@ def parse_record_str(record_str):
     # 方法1：尝试用 ast.literal_eval 快速解析（适用于不包含 nan/inf 的干净字符串）
     try:
         rec = ast.literal_eval(record_str)
-    except Exception:
+    except Exception as er:
+        print(er)
         # 方法2：使用安全的 eval，将 nan, inf 等映射为浮点数
         try:
             # 定义安全命名空间，仅包含需要的常量
@@ -87,7 +88,7 @@ def import_csv_to_db(conn):
             error_msg = row.get('错误信息', '')
 
             # 只处理日期解析格式错误（可调整关键字）
-            if 'does not match format' not in error_msg: # 几种错误关键字‘日期解析异常（大于当前日期）’，'does not match format'
+            if '日期解析异常（大于当前日期）' not in error_msg: # 几种错误关键字‘日期解析异常（大于当前日期）’，'does not match format'
                 continue
 
             file_path = row.get('文件完整路径')
