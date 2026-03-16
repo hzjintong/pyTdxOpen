@@ -2,9 +2,12 @@ from struct import unpack, calcsize
 import os
 import re
 from datetime import datetime #, timedelta
+from typing import final
+
 import pandas as pd
 from tqdm import tqdm
 import warnings
+from TechnicalAnalyzer import TechnicalAnalyzer
 # import holidays
 '''
  获取财务报告期的方法有问题，仅取了最新一期的财务文件，但财务文件会提前生成，如2026年初，2026年的四个季度的文件就已经有了，但文件内实际没有数据
@@ -158,6 +161,91 @@ class TDXFinancialValuationRanker:
             else:
                 print(f"解析日线数据记录时出错: {e}")
                 return None
+
+    def get_history_data(self, stock_code):
+        """获取股票所有历史记录，以便进行走势形态得分评估"""
+        # 1. 獲取文件路徑 (調用你現有的 get_day_file_path 方法)
+        file_path = self.get_day_file_path(stock_code)
+        if not os.path.exists(file_path):
+            print(f"警告: 股票 {stock_code} 的日线数据文件不存在: {file_path}")
+            return None
+
+        # 2. 讀取並解析通達信二進制日線數據
+        records = []
+
+        try:
+            with open(file_path, 'rb') as f:
+                while True:
+                    chunk = f.read(32)  # 通達信每組數據 32 字節
+                    if not chunk or len(chunk) < 32:
+                        break
+                    # 格式: 日期,開,高,低,收,金額,量,保留 (5個I, 1個f, 2個I)
+                    data = unpack('<5If2I', chunk)
+                    records.append({
+                        'date': data[0],
+                        'open': data[1] / 100.0,
+                        'high': data[2] / 100.0,
+                        'low': data[3] / 100.0,
+                        'close': data[4] / 100.0,
+                        'volume': data[6]
+                    })
+        except Exception as e:
+            print(f"解析二進制數據出錯: {e}")
+            return None
+
+        df = pd.DataFrame(records)
+        if df.empty:
+            return None
+
+        # 3. 處理權息資料 (復權算法核心)
+        # 假設權息文件路徑與你的程序同目錄
+        split_file = "wsSHSZ_SPLITs.txt"
+        if os.path.exists(split_file):
+            # 讀取權息文件，手動處理代碼前綴 (SH/SZ)
+            # 格式：代碼,日期,送股,配股,配價,紅利
+            df_splits = pd.read_csv(split_file, header=0,
+                                    names=['code', 'date', 'song', 'pei', 'peiprice', 'fenhong'],
+                                    dtype={'code': str, 'date': int})
+
+            # 過濾出當前股票的權息記錄 (需要匹配帶有 SH/SZ 的代碼格式)
+            # 通過判斷文件路徑決定是 SH 還是 SZ
+            prefix = "SH" if "sh" in file_path.lower() else "SZ"
+            full_code = prefix + stock_code
+            curr_splits = df_splits[df_splits['code'] == full_code].copy()
+
+            if not curr_splits.empty:
+                # 將日線數據與權息數據合併
+                df = pd.merge(df, curr_splits, on='date', how='left').fillna(0)
+
+                # --- 前復權計算邏輯 ---
+                # 原理：從最後一天向前推算，計算累計複權因子
+                df['adj_factor'] = 1.0
+                cumulative_factor = 1.0
+
+                # 倒序循環處理 (從最新日期往最舊日期)
+                for i in range(len(df) - 1, 0, -1):
+                    row = df.iloc[i]
+                    # 判斷當天是否有權息發生
+                    if row['song'] != 0 or row['pei'] != 0 or row['fenhong'] != 0:
+                        # 復權計算公式關鍵：
+                        # 除權價 = (前收盤 - 紅利 + 配股*配價) / (1 + 送股 + 配股)
+                        # 因子 = (1 + 送股 + 配股)
+                        # 考慮分紅對因子的影響 (簡化處理通常主要關注比例，精確計算需包含分紅金額)
+                        day_factor = (1 + row['song'] + row['pei'])
+                        cumulative_factor *= day_factor
+
+                    # 更新該日期之前的複權因子
+                    df.at[i - 1, 'adj_factor'] = cumulative_factor
+
+                # 應用復權因子到所有價格字段
+                # 以當前最後一天的價格為基準(1.0)，歷史價格會變小
+                for col in ['open', 'high', 'low', 'close']:
+                    df[col] = (df[col] / df['adj_factor']).round(2)
+
+                # 清理不需要的權息列
+                df.drop(['song', 'pei', 'peiprice', 'fenhong', 'adj_factor'], axis=1, inplace=True)
+
+        return df
 
     def get_latest_price_data(self, stock_code):
         """获取最新股价数据"""
@@ -685,6 +773,20 @@ class TDXFinancialValuationRanker:
             # 计算估值指标（基于最新财务和股价）
             valuation_metrics = self.calculate_valuation_metrics(latest_financial, price_data)
 
+            # ... 现有逻辑获取 price_data 后 ...
+
+            # 1. 提取该股历史日线序列 (需要从本地文件读取一段历史数据，不仅是最新一天)
+            # 通过构建的 get_latest_price_data 返回完整的 DataFrame
+            df_history = self.get_history_data(stock_code)
+
+            tech_score = 0
+            final_score = 0
+            if df_history is not None and len(df_history) > 30:
+                # 2. 调用技术分析器
+                ta = TechnicalAnalyzer(df_history)
+                tech_score = ta.get_technical_score()
+
+
             # 根据类别计算得分
             if category == '综合':
                 # 传入多期数据字典，让内部使用多期计算增长率
@@ -713,10 +815,15 @@ class TDXFinancialValuationRanker:
                 dividend_score = min(dividend_yield, 10) / 10  # 标准化
 
                 score = pe_score * 0.3 + pb_score * 0.3 + peg_score * 0.2 + dividend_score * 0.2
+
             else:
                 continue
 
-            stock_scores[stock_code] = score
+            # 3. 最终评分耦合：基本面评分 * 0.7 + 技术面评分 * 0.3
+            # 这样确保了只有“绩优”且“形态好”的股票会排在最前面
+            final_score = (score * 0.7) + (tech_score * 0.3)
+
+            stock_scores[stock_code] = final_score
             # 存储最新期数据用于输出
             stock_details[stock_code] = {
                 'financial_data': latest_financial,

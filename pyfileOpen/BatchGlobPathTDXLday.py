@@ -169,16 +169,16 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
 
             # 3. 在目标目录下查找所有的 .lc1 和 .lc5 文件
             # 使用 glob 模式匹配，例如：匹配 /sh/minline/*.lc1 和 /sh/minline/*.lc5
-            pattern_lc1 = os.path.join(data_type_path, '*.lc1')
+            pattern_lc1 = os.path.join(data_type_path, '*.lc[15]')
             # pattern_lc12 = os.path.join(data_type_path2, '*.lc1')
-            pattern_lc5 = os.path.join(data_type_path, '*.lc5')
+            # pattern_lc5 = os.path.join(data_type_path, '*.lc5')
             # pattern_lc52 = os.path.join(data_type_path2, '*.lc5')
             pattern_lday = os.path.join(data_type_path, '*.day')
             # pattern_lday2 = os.path.join(data_type_path2, '*.day')
 
             file_list_lc1 = glob.glob(pattern_lc1)
             # file_list_lc12 = glob.glob(pattern_lc12)
-            file_list_lc5 = glob.glob(pattern_lc5)
+            # file_list_lc5 = glob.glob(pattern_lc5)
             # file_list_lc52 = glob.glob(pattern_lc52)
             file_list_day = glob.glob(pattern_lday)
             # file_list_day2 = glob.glob(pattern_lday2)
@@ -203,7 +203,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures ):
             for long_file4 in file_list_day2[:3]:
                 print(long_file4)"""
 
-            file_list_lc1_lc5 = file_list_lc1 + file_list_lc5 # + file_list_lc12 + file_list_lc52
+            file_list_lc1_lc5 = file_list_lc1 # + file_list_lc5 # + file_list_lc12 + file_list_lc52
             file_list_lday = file_list_day # + file_list_day2
 
             # 4. 按股票代码对文件进行分组
