@@ -182,11 +182,11 @@ class TDXFinancialValuationRanker:
                     # 格式: 日期,開,高,低,收,金額,量,保留 (5個I, 1個f, 2個I)
                     data = unpack('<5If2I', chunk)
                     records.append({
-                        'date': data[0],
-                        'open': data[1] / 100.0,
-                        'high': data[2] / 100.0,
-                        'low': data[3] / 100.0,
-                        'close': data[4] / 100.0,
+                        'date':   data[0],
+                        'open':   data[1] / 100.0,
+                        'high':   data[2] / 100.0,
+                        'low':    data[3] / 100.0,
+                        'close':  data[4] / 100.0,
                         'volume': data[6]
                     })
         except Exception as e:
@@ -203,9 +203,11 @@ class TDXFinancialValuationRanker:
         if os.path.exists(split_file):
             # 讀取權息文件，手動處理代碼前綴 (SH/SZ)
             # 格式：代碼,日期,送股,配股,配價,紅利
-            df_splits = pd.read_csv(split_file, header=0,
-                                    names=['code', 'date', 'song', 'pei', 'peiprice', 'fenhong'],
-                                    dtype={'code': str, 'date': int})
+            df_splits = pd.read_csv( split_file,
+                                     encoding='gb18030',
+                                     header=0,
+                                     names=['code', 'date', 'song', 'pei', 'peiprice', 'fenhong'],
+                                     dtype={'code': str, 'date': int})
 
             # 過濾出當前股票的權息記錄 (需要匹配帶有 SH/SZ 的代碼格式)
             # 通過判斷文件路徑決定是 SH 還是 SZ
@@ -780,12 +782,11 @@ class TDXFinancialValuationRanker:
             df_history = self.get_history_data(stock_code)
 
             tech_score = 0
-            final_score = 0
+            # final_score = 0
             if df_history is not None and len(df_history) > 30:
                 # 2. 调用技术分析器
                 ta = TechnicalAnalyzer(df_history)
                 tech_score = ta.get_technical_score()
-
 
             # 根据类别计算得分
             if category == '综合':
@@ -996,7 +997,7 @@ def main():
     if test_mode:
         choice = '1'  # 测试模式下默认使用综合排名
 
-    years = 1 if test_mode else int(input("使用最近几年的数据? (默认1): ") or "1")
+    years = 3 if test_mode else int(input("使用最近几年的数据? (默认3): ") or "3")
     top_n = 20 if test_mode else int(input("显示前多少名? (默认50): ") or "50")
 
     # categories_to_run = []
@@ -1035,7 +1036,8 @@ def main():
     if results:
         export = input("\n是否导出排名结果? (y/n): ").strip().lower()
         if export == 'y':
-            filename = input("请输入导出文件名 (默认: 股票综合排名.xlsx): ") or "股票综合排名.xlsx"
+            time_stamp = datetime.now().strftime("%Y%m%d%H%M")
+            filename = input(f"请输入导出文件名 (默认: 股票综合排名{time_stamp}.xlsx): ") or f"股票综合排名{time_stamp}.xlsx"
             ranker.export_ranking_to_excel(results, filename, years)
 
 
