@@ -232,17 +232,33 @@ class TDXFinancialValuationRanker:
                         # 復權計算公式關鍵：
                         # 除權價 = (前收盤 - 紅利 + 配股*配價) / (1 + 送股 + 配股)
                         # 因子 = (1 + 送股 + 配股)
-                        # 考慮分紅對因子的影響 (簡化處理通常主要關注比例，精確計算需包含分紅金額)
-                        day_factor = (1 + row['song'] + row['pei'])
-                        cumulative_factor *= day_factor
 
-                    # 更新該日期之前的複權因子
-                    df.at[i - 1, 'adj_factor'] = cumulative_factor
+                        # 考慮分紅對因子的影響 (簡化處理通常主要關注比例，精確計算需包含分紅金額)
+                        # day_factor = (1 + row['song'] + row['pei'])
+                        # cumulative_factor *= day_factor
+
+                        # 改为精确复权，考虑分红金额
+                        # 昨天收盘价（不复权）
+                        pre_close = df.at[i-1, 'close']
+
+                        # 计算除权后的参考价（理论值）
+                        # 公式：(前收盘 - 分红 + 配股*配股价) / (1 + 送转 + 配股)
+                        adj_pre_close = ((pre_close - row['fenhong'] + row['pei'] * row['peiprice']) /
+                                         (1 + row['song'] + row['pei']))
+
+                        # 计算当前除权行为导致的缩减比例
+                        ratio = adj_pre_close / pre_close
+
+                        # 将这个比例累积应用到该日期之前的所有 adj_factor 上
+                        df.loc[0 : i-1, 'adj_factor'] *= ratio
+
+                    # 更新該日期之前的複權因子，
+                    # df.at[i - 1, 'adj_factor'] = cumulative_factor
 
                 # 應用復權因子到所有價格字段
                 # 以當前最後一天的價格為基準(1.0)，歷史價格會變小
                 for col in ['open', 'high', 'low', 'close']:
-                    df[col] = (df[col] / df['adj_factor']).round(2)
+                    df[col] = (df[col] / df['adj_factor']).round(3) # 保留3位小数提高精度
 
                 # 清理不需要的權息列
                 df.drop(['song', 'pei', 'peiprice', 'fenhong', 'adj_factor'], axis=1, inplace=True)
