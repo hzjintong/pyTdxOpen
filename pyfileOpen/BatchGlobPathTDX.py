@@ -12,7 +12,7 @@ from MergeTDXday import merge_day_data, read_tdx_day_file, sort_day_time_data, w
 def check_for_exit():
     """检查是否按下了退出键"""
     # if keyboard.is_pressed('CTRL+q') or keyboard.is_pressed('esc'):
-    if keyboard.is_pressed('CTRL+q') :
+    if keyboard.is_pressed('CTRL+Shift+q') :
         return True
     return False
 
