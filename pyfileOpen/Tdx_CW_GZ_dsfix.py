@@ -2,7 +2,7 @@ from struct import unpack, calcsize
 import os
 import re
 from datetime import datetime #, timedelta
-from typing import final
+# from typing import final
 
 import pandas as pd
 from tqdm import tqdm
@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class TDXFinancialValuationRanker:
     """通达信财务与估值综合排序器"""
 
-    def __init__(self, cw_dir, day_data_dir, field_file="专业财务数据字段说明.txt"):
+    def __init__(self, cw_dir, day_data_dir, field_file="专业财务数据字段说明.txt",sector_file=None):
         """
         初始化排序器
 
@@ -27,12 +27,33 @@ class TDXFinancialValuationRanker:
             cw_dir: 财务数据文件目录
             day_data_dir: 日线数据根目录
             field_file: 字段说明文件路径
+            sector_file: 板块分类文件路劲（可选）
         """
         self.cw_dir = cw_dir
         self.day_data_dir = day_data_dir
         self.field_names = {}
         self.field_descriptions = {}
         self.load_field_descriptions(field_file)
+
+        self.code_to_name = {}
+        if sector_file:
+            self.load_stock_names( sector_file )
+
+    def load_stock_names(self, sector_file):
+        """加载板块文件，构建股票代码->名称的映射字典"""
+        try:
+            df = pd.read_csv(sector_file, encoding='gb18030', header=None)
+            df.columns = ['Industry_code', 'Industry_name', 'code', 'stock_name']
+            # 去除可能的空格，确保代码格式一致
+            df['code'] = df['code'].astype(str).str.strip()
+            # 关键修改：将代码格式化为6位数字（不足前面补0）
+            df['code'] = df['code'].apply(lambda x: x.zfill(6))
+            df['stock_name'] = df['stock_name'].astype(str).str.strip()
+            # 构建字典，若同一代码出现多次，保留第一次（可根据需要调整）
+            self.code_to_name = dict(zip(df['code'], df['stock_name']))
+            print(f"已加载 {len(self.code_to_name)} 条股票名称映射")
+        except Exception as e:
+            print(f"加载板块文件出错: {e}")
 
     def load_field_descriptions(self, field_file):
         """加载字段说明"""
@@ -879,7 +900,7 @@ class TDXFinancialValuationRanker:
             results.append({
                 '排名': rank,
                 '股票代码': stock_code,
-                '股票名称': stock_code,  # 原程序股票名称列空缺，这里先用代码填充
+                '股票名称': self.code_to_name.get(stock_code,stock_code),  # 原程序股票名称列空缺，这里先用代码填充
                 f'{category}得分': round(score, 4),
                 '当前股价': round(price['close'], 2),
                 'ROE(%)': round(financial.get(197, 0), 2),
@@ -895,7 +916,7 @@ class TDXFinancialValuationRanker:
         df = pd.DataFrame(results)
         return df
 
-    def export_ranking_to_excel(self, dfs_dict, filename="股票综合排名.xlsx", year=1):
+    def export_ranking_to_excel(self, dfs_dict, filename="股票综合排名.xlsx", year=3):
         """导出排名结果到Excel文件"""
         if not dfs_dict:
             print("没有数据可导出")
@@ -981,12 +1002,13 @@ def main():
     print("=" * 80)
 
     # 配置参数
-    CW_DIR = "d:/new_hxzq_hc/vipdoc/cw/"  # 通达信财务数据目录
-    DAY_DATA_DIR = "d:/new_hxzq_hc/vipdoc/"  # 通达信日线数据根目录
-    FIELD_FILE = "专业财务数据字段说明.txt"  # 字段说明文件
+    cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"  # 通达信财务数据目录
+    day_data_dir = "d:/new_hxzq_hc/vipdoc/"  # 通达信日线数据根目录
+    field_file = "专业财务数据字段说明.txt"  # 字段说明文件
+    sector_file = r"d:\行业板块.txt"  # 板块分类文件
 
     # 创建排序器
-    ranker = TDXFinancialValuationRanker(CW_DIR, DAY_DATA_DIR, FIELD_FILE)
+    ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
 
     # 测试日线数据读取
     print("\n测试日线数据读取...")
@@ -1059,11 +1081,12 @@ def main():
 
 def quick_ranking():
     """快速排名示例"""
-    CW_DIR = "d:/new_hxzq_hc/vipdoc/cw/"
-    DAY_DATA_DIR = "d:/new_hxzq_hc/vipdoc/"
-    FIELD_FILE = "专业财务数据字段说明.txt"
+    cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"
+    day_data_dir = "d:/new_hxzq_hc/vipdoc/"
+    field_file = "专业财务数据字段说明.txt"
+    sector_file = r"d:\行业板块.txt"
 
-    ranker = TDXFinancialValuationRanker(CW_DIR, DAY_DATA_DIR, FIELD_FILE)
+    ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
 
     print("测试日线数据读取...")
     test_code = '000001'
@@ -1076,7 +1099,7 @@ def quick_ranking():
         return
 
     print("\n正在计算综合财务与估值排名...")
-    df_comprehensive = ranker.rank_by_category(years=1, top_n=30, category='综合', test_mode=True)
+    df_comprehensive = ranker.rank_by_category(years=3, top_n=30, category='综合', test_mode=True)
 
     if not df_comprehensive.empty:
         print("\n" + "=" * 120)
@@ -1090,7 +1113,7 @@ def quick_ranking():
     print("\n" + "=" * 120)
     print("估值水平排名前20名:")
     print("=" * 120)
-    df_valuation = ranker.rank_by_category(years=1, top_n=20, category='估值', test_mode=True)
+    df_valuation = ranker.rank_by_category(years=3, top_n=20, category='估值', test_mode=True)
     if not df_valuation.empty:
         print(df_valuation.head(20).to_string(index=False))
     else:
@@ -1106,11 +1129,12 @@ def quick_ranking():
 
 def analyze_single_stock():
     """分析单只股票"""
-    CW_DIR = "d:/new_hxzq_hc/vipdoc/cw/"
-    DAY_DATA_DIR = "d:/new_hxzq_hc/vipdoc/"
-    FIELD_FILE = "专业财务数据字段说明.txt"
+    cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"
+    day_data_dir = "d:/new_hxzq_hc/vipdoc/"
+    field_file = "专业财务数据字段说明.txt"
+    sector_file = r"d:\行业板块.txt"
 
-    ranker = TDXFinancialValuationRanker(CW_DIR, DAY_DATA_DIR, FIELD_FILE)
+    ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
 
     stock_code = input("请输入股票代码: ").strip()
 
