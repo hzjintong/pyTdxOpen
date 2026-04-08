@@ -719,14 +719,14 @@ class TDXFinancialValuationRanker:
         return total_score
 
     # ==================== 修改点：rank_by_category 利用多期数据 ====================
-    def rank_by_category(self, years=5, top_n=100, category='综合', test_mode=False):
+    def rank_by_category(self, years=5, top_n=100, category='综合财务', test_mode=False):
         """
         按类别进行排名
 
         Args:
             years: 使用最近多少年的数据
             top_n: 显示前多少名
-            category: 排名类别 ('综合', '盈利能力', '成长能力', '估值')
+            category: 排名类别 ('综合财务', '综合财务与技术', '盈利能力', '盈利能力与技术', '成长能力', '成长能力与技术', '估值', '估值与技术')
             test_mode: 测试模式，只处理少量股票
 
         Returns:
@@ -821,27 +821,44 @@ class TDXFinancialValuationRanker:
             df_history = self.get_history_data(stock_code)
 
             tech_score = 0
-            # final_score = 0
+            final_score = 0
             if df_history is not None and len(df_history) > 30:
                 # 2. 调用技术分析器
                 ta = TechnicalAnalyzer(df_history)
                 tech_score = ta.get_technical_score()
 
             # 根据类别计算得分
-            if category == '综合':
+            if category == '综合财务':
                 # 传入多期数据字典，让内部使用多期计算增长率
                 score = self.calculate_comprehensive_score(multi_data, valuation_metrics)
+                final_score =score
+            elif category == '综合财务与技术':
+                score = self.calculate_comprehensive_score(multi_data, valuation_metrics)
+                final_score = (score * 0.7) + (tech_score * 0.3)
             elif category == '盈利能力':
                 # 盈利能力得分：ROE + 利润率（仅用最新期）
                 roe = latest_financial.get(197, 0)
                 profit_margin = latest_financial.get(199, 0)
                 score = roe * 0.6 + profit_margin * 0.4
+                final_score = score
+            elif category == '盈利能力与技术':
+                # 盈利能力得分：ROE + 利润率（仅用最新期）
+                roe = latest_financial.get(197, 0)
+                profit_margin = latest_financial.get(199, 0)
+                score = roe * 0.6 + profit_margin * 0.4
+                final_score = (score * 0.7) + (tech_score * 0.3)
             elif category == '成长能力':
                 # 成长能力得分：营收增长 + 利润增长（优先使用同比，但此处简化，仍用字段值）
                 # 可改进为利用多期计算，但为了最小改动，先保持原逻辑
                 revenue_growth = latest_financial.get(183, 0)
                 profit_growth = latest_financial.get(184, 0)
                 score = revenue_growth * 0.5 + profit_growth * 0.5
+                final_score = score
+            elif category == '成长能力与技术':
+                revenue_growth = latest_financial.get(183, 0)
+                profit_growth = latest_financial.get(184, 0)
+                score = revenue_growth * 0.5 + profit_growth * 0.5
+                final_score = (score * 0.7) + (tech_score * 0.3)
             elif category == '估值':
                 # 估值得分：PE、PB、PEG的倒数加权
                 pe = valuation_metrics.get('pe', 0)
@@ -855,13 +872,28 @@ class TDXFinancialValuationRanker:
                 dividend_score = min(dividend_yield, 10) / 10  # 标准化
 
                 score = pe_score * 0.3 + pb_score * 0.3 + peg_score * 0.2 + dividend_score * 0.2
+                final_score = score
+            elif category =='估值与技术':
+                pe = valuation_metrics.get('pe', 0)
+                pb = valuation_metrics.get('pb', 0)
+                peg = valuation_metrics.get('peg', 0)
+                dividend_yield = valuation_metrics.get('dividend_yield', 0)
+
+                pe_score = 1 / pe if 0 < pe < 1e6 else 0
+                pb_score = 1 / pb if 0 < pb < 1e6 else 0
+                peg_score = 1 / peg if 0 < peg < 1e6 else 0
+                dividend_score = min(dividend_yield, 10) / 10  # 标准化
+
+                score = pe_score * 0.3 + pb_score * 0.3 + peg_score * 0.2 + dividend_score * 0.2
+                final_score = (score * 0.7) + (tech_score * 0.3)
 
             else:
                 continue
 
             # 3. 最终评分耦合：基本面评分 * 0.7 + 技术面评分 * 0.3
             # 这样确保了只有“绩优”且“形态好”的股票会排在最前面
-            final_score = (score * 0.7) + (tech_score * 0.3)
+            # 下列综合评分语句已经嵌入到前面的各个分类评分中，给出了各分类评分与结合技术评分后的对比数据以供分析
+            # final_score = (score * 0.7) + (tech_score * 0.3)
 
             stock_scores[stock_code] = final_score
             # 存储最新期数据用于输出
@@ -1025,15 +1057,19 @@ def main():
     # 选择排名类别
     print("\n请选择排名类别:")
     print("1. 综合财务与估值排名")
-    print("2. 盈利能力排名")
-    print("3. 成长能力排名")
-    print("4. 估值水平排名")
-    print("5. 所有类别排名")
-    print("6. 测试模式（少量股票）")
+    print("2. 综合财务、估值与技术排名")
+    print("3. 盈利能力排名")
+    print("4. 盈利能力与技术排名")
+    print("5. 成长能力排名")
+    print("6. 成长能力与技术排名")
+    print("7. 估值水平排名")
+    print("8. 估值水平与技术排名")
+    print("9. 所有类别排名")
+    print("10. 测试模式（少量股票）")
 
-    choice = input("\n请选择 (1-6): ").strip()
+    choice = input("\n请选择 (1-10): ").strip()
 
-    test_mode = (choice == '6')
+    test_mode = (choice == '10')
     if test_mode:
         choice = '1'  # 测试模式下默认使用综合排名
 
@@ -1043,15 +1079,30 @@ def main():
     # categories_to_run = []
 
     if choice == '1':
-        categories_to_run = ['综合']
+        categories_to_run = ['综合财务']
     elif choice == '2':
-        categories_to_run = ['盈利能力']
+        categories_to_run = ['综合财务与技术']
     elif choice == '3':
-        categories_to_run = ['成长能力']
+        categories_to_run = ['盈利能力']
     elif choice == '4':
-        categories_to_run = ['估值']
+        categories_to_run = ['盈利能力与技术']
     elif choice == '5':
-        categories_to_run = ['综合', '盈利能力', '成长能力', '估值']
+        categories_to_run = ['成长能力']
+    elif choice == '6':
+        categories_to_run = ['成长能力与技术']
+    elif choice == '7':
+        categories_to_run = ['估值']
+    elif choice == '8':
+        categories_to_run = ['估值与技术']
+    elif choice == '9':
+        categories_to_run = ['综合财务',
+                             '综合财务与技术',
+                             '盈利能力',
+                             '盈利能力与技术',
+                             '成长能力',
+                             '成长能力与技术',
+                             '估值',
+                             '估值与技术']
     else:
         print("无效选择")
         return
