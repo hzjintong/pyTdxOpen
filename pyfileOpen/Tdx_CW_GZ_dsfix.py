@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class TDXFinancialValuationRanker:
     """通达信财务与估值综合排序器"""
 
-    def __init__(self, cw_dir, day_data_dir, field_file="专业财务数据字段说明.txt",sector_file=None):
+    def __init__(self, cw_dir, day_data_dir, field_file="专业财务数据字段说明.txt", sector_file=None ):
         """
         初始化排序器
 
@@ -27,7 +27,7 @@ class TDXFinancialValuationRanker:
             cw_dir: 财务数据文件目录
             day_data_dir: 日线数据根目录
             field_file: 字段说明文件路径
-            sector_file: 板块分类文件路劲（可选）
+            sector_file: 板块分类文件路径（可选）
         """
         self.cw_dir = cw_dir
         self.day_data_dir = day_data_dir
@@ -35,9 +35,10 @@ class TDXFinancialValuationRanker:
         self.field_descriptions = {}
         self.load_field_descriptions(field_file)
 
+        # 加载行业板块分类可用于股票名称映射
         self.code_to_name = {}
         if sector_file:
-            self.load_stock_names( sector_file )
+            self.load_stock_names(sector_file)
 
     def load_stock_names(self, sector_file):
         """加载板块文件，构建股票代码->名称的映射字典"""
@@ -46,7 +47,7 @@ class TDXFinancialValuationRanker:
             df.columns = ['Industry_code', 'Industry_name', 'code', 'stock_name']
             # 去除可能的空格，确保代码格式一致
             df['code'] = df['code'].astype(str).str.strip()
-            # 关键修改：将代码格式化为6位数字（不足前面补0）
+            # 将代码格式化为6位数字（不足前面补0）
             df['code'] = df['code'].apply(lambda x: x.zfill(6))
             df['stock_name'] = df['stock_name'].astype(str).str.strip()
             # 构建字典，若同一代码出现多次，保留第一次（可根据需要调整）
@@ -228,7 +229,8 @@ class TDXFinancialValuationRanker:
                                      encoding='gb18030',
                                      header=0,
                                      names=['code', 'date', 'song', 'pei', 'peiprice', 'fenhong'],
-                                     dtype={'code': str, 'date': int})
+                                     dtype={'code': str, 'date': int, 'song': float, 'pei': float, 'peiprice': float,
+                                            'fenhong': float})
 
             # 過濾出當前股票的權息記錄 (需要匹配帶有 SH/SZ 的代碼格式)
             # 通過判斷文件路徑決定是 SH 還是 SZ
@@ -243,7 +245,7 @@ class TDXFinancialValuationRanker:
                 # --- 前復權計算邏輯 ---
                 # 原理：從最後一天向前推算，計算累計複權因子
                 df['adj_factor'] = 1.0
-                cumulative_factor = 1.0
+                # cumulative_factor = 1.0
 
                 # 倒序循環處理 (從最新日期往最舊日期)
                 for i in range(len(df) - 1, 0, -1):
@@ -409,7 +411,7 @@ class TDXFinancialValuationRanker:
                 header_size = calcsize("<3h1H3L")
                 data_header = cw_file.read(header_size)
                 stock_header = unpack("<3h1H3L", data_header)
-                max_count = stock_header[3]
+                max_count = int(stock_header[3])
 
                 # 限制解析数量用于测试
                 if max_stocks:
@@ -771,8 +773,8 @@ class TDXFinancialValuationRanker:
         max_stocks = 1000 if test_mode else None
 
         # 依次解析每个文件
-        for file_path in tqdm(files, desc="解析文件进度"):
-            filename = os.path.basename(file_path)
+        for file_path in tqdm( files, desc="解析文件进度" ):
+            filename = os.path.basename( file_path )
             date_str = filename[4:12]  # 如 '20231231'
             stocks_data = self.parse_all_stocks_in_file(file_path, field_indices, max_stocks)
             for code, data in stocks_data.items():
@@ -900,7 +902,7 @@ class TDXFinancialValuationRanker:
             results.append({
                 '排名': rank,
                 '股票代码': stock_code,
-                '股票名称': self.code_to_name.get(stock_code,stock_code),  # 原程序股票名称列空缺，这里先用代码填充
+                '股票名称': self.code_to_name.get(stock_code,stock_code),  # 原程序股票名称列空缺，这里改为通过行业板块文件做名称映射
                 f'{category}得分': round(score, 4),
                 '当前股价': round(price['close'], 2),
                 'ROE(%)': round(financial.get(197, 0), 2),
@@ -916,7 +918,7 @@ class TDXFinancialValuationRanker:
         df = pd.DataFrame(results)
         return df
 
-    def export_ranking_to_excel(self, dfs_dict, filename="股票综合排名.xlsx", year=3):
+    def export_ranking_to_excel(self, dfs_dict, filename="股票综合排名.xlsx", year=1):
         """导出排名结果到Excel文件"""
         if not dfs_dict:
             print("没有数据可导出")
@@ -1005,7 +1007,7 @@ def main():
     cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"  # 通达信财务数据目录
     day_data_dir = "d:/new_hxzq_hc/vipdoc/"  # 通达信日线数据根目录
     field_file = "专业财务数据字段说明.txt"  # 字段说明文件
-    sector_file = r"d:\行业板块.txt"  # 板块分类文件
+    sector_file = "D:/行业板块.txt"  # 根据实际路径修改
 
     # 创建排序器
     ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
@@ -1084,7 +1086,7 @@ def quick_ranking():
     cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"
     day_data_dir = "d:/new_hxzq_hc/vipdoc/"
     field_file = "专业财务数据字段说明.txt"
-    sector_file = r"d:\行业板块.txt"
+    sector_file = "D:/行业板块.txt"  # 根据实际路径修改
 
     ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
 
@@ -1099,7 +1101,7 @@ def quick_ranking():
         return
 
     print("\n正在计算综合财务与估值排名...")
-    df_comprehensive = ranker.rank_by_category(years=3, top_n=30, category='综合', test_mode=True)
+    df_comprehensive = ranker.rank_by_category(years=1, top_n=30, category='综合', test_mode=True)
 
     if not df_comprehensive.empty:
         print("\n" + "=" * 120)
@@ -1113,7 +1115,7 @@ def quick_ranking():
     print("\n" + "=" * 120)
     print("估值水平排名前20名:")
     print("=" * 120)
-    df_valuation = ranker.rank_by_category(years=3, top_n=20, category='估值', test_mode=True)
+    df_valuation = ranker.rank_by_category(years=1, top_n=20, category='估值', test_mode=True)
     if not df_valuation.empty:
         print(df_valuation.head(20).to_string(index=False))
     else:
@@ -1132,7 +1134,7 @@ def analyze_single_stock():
     cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"
     day_data_dir = "d:/new_hxzq_hc/vipdoc/"
     field_file = "专业财务数据字段说明.txt"
-    sector_file = r"d:\行业板块.txt"
+    sector_file = "D:/二级行业板块.txt"  # 根据实际路径修改
 
     ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
 
