@@ -1007,7 +1007,7 @@ def main():
     cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"  # 通达信财务数据目录
     day_data_dir = "d:/new_hxzq_hc/vipdoc/"  # 通达信日线数据根目录
     field_file = "专业财务数据字段说明.txt"  # 字段说明文件
-    sector_file = "D:/行业板块.txt"  # 根据实际路径修改
+    sector_file = "D:/二级行业板块.txt"  # 根据实际路径修改
 
     # 创建排序器
     ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
@@ -1086,7 +1086,7 @@ def quick_ranking():
     cw_dir = "d:/new_hxzq_hc/vipdoc/cw/"
     day_data_dir = "d:/new_hxzq_hc/vipdoc/"
     field_file = "专业财务数据字段说明.txt"
-    sector_file = "D:/行业板块.txt"  # 根据实际路径修改
+    sector_file = "D:/二级行业板块.txt"  # 根据实际路径修改
 
     ranker = TDXFinancialValuationRanker(cw_dir, day_data_dir, field_file, sector_file)
 
