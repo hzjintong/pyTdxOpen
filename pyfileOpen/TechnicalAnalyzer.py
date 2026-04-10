@@ -1,7 +1,18 @@
-import talib
+import os
+import struct
+import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
+from tqdm import tqdm
+import talib
+import warnings
 
+# 屏蔽警告
+warnings.filterwarnings('ignore')
 
+# ==========================================
+# 1. 技术面分析模块
+# ==========================================
 class TechnicalAnalyzer:
     """技术面模式识别引擎"""
 
@@ -11,12 +22,37 @@ class TechnicalAnalyzer:
             df_day: 包含 'open', 'high', 'low', 'close', 'volume' 的 DataFrame
         """
         self.df = df_day
+        if len(df_day) < 30 :
+            self.has_data = False
+            return
+        self.has_data = True
+
         # 预转换数据格式以适配 TA-Lib
         self.close = df_day['close'].values.astype(float)
         self.open = df_day['open'].values.astype(float)
         self.high = df_day['high'].values.astype(float)
         self.low = df_day['low'].values.astype(float)
         self.volume = df_day['volume'].values.astype(float)
+
+    def get_signals(self):
+        if not self.has_data:
+            return {'bull_alignment': False, 'volume_breakout': False, 'breakout': False}
+
+        signals = {}
+        # 1. 均线多头 (MA5 > MA10 > MA20)
+        ma5 = talib.SMA(self.close, timeperiod=5)
+        ma10 = talib.SMA(self.close, timeperiod=10)
+        ma20 = talib.SMA(self.close, timeperiod=20)
+        signals['bull_alignment'] = (ma5[-1] > ma10[-1] > ma20[-1])
+
+        # 2. 放量突破 (当日成交量 > 5日均量 1.5倍)
+        vma5 = talib.SMA(self.volume, timeperiod=5)
+        signals['volume_breakout'] = self.volume[-1] > (vma5[-1] * 1.5)
+
+        # 3. 技术破位卖出信号 (收盘价跌破MA20)
+        signals['technical_exit'] = self.close[-1] < ma20[-1]
+
+        return signals
 
     def scan_signals(self):
         """扫描多种技术面模式"""
