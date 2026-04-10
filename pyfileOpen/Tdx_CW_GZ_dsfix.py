@@ -1192,10 +1192,11 @@ def analyze_single_stock():
     stock_code = input("请输入股票代码: ").strip()
 
     # 获取最新财务数据
-    files = ranker.get_latest_year_files(1)
+    files = ranker.get_latest_year_files(2)
     if files:
-        latest_file = files[-1]
-        stocks_data = ranker.parse_all_stocks_in_file(latest_file, list(range(1, 300)), max_stocks=10)
+        latest_file = files[-2]
+        print(f'本次使用的财务文件为 {latest_file}')
+        stocks_data = ranker.parse_all_stocks_in_file(latest_file, list(range(1, 584)), max_stocks=6000)
 
         if stock_code in stocks_data:
             financial_data = stocks_data[stock_code]
