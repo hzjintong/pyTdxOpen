@@ -212,11 +212,17 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
     print("所有市场和数据类型的批量处理完成！")
 
 
-def batch_delete_min_file(vipdoc_root_path):
+def batch_delete_min_file(vipdoc_root_path, import_start_date_time):
     """
     该函数保留原逻辑，但在关键解析位置增加防崩处理
     """
     vipdoc_path = Path(vipdoc_root_path)
+    try:
+        start_dt = datetime.strptime(import_start_date_time, "%Y%m%d")
+    except ValueError:
+        print("输入的日期格式有误，请使用 YYYYMMDD 格式")
+        return False
+
     deleted_files_num = 0
     operating_files_num = 0
 
@@ -249,10 +255,18 @@ def batch_delete_min_file(vipdoc_root_path):
                                 print(f"清理旧文件: {input_filename}")
                                 delete_min_file(input_filename)
                                 deleted_files_num += 1
+                                continue
                         except Exception as e:
                             log_parsing_error(input_filename, 0, min_data[0], f"预检日期解析失败: {e}")
                 except Exception as e:
                     print(f"预检文件 {input_filename} 失败: {e}")
+
+                try:
+                    delete_min_data(input_filename, start_dt)
+                except Exception as e:
+                    # 顶层捕获，防止单个文件处理逻辑崩溃导致整个批处理停止
+                    print(f"处理文件 {input_filename} 时发生严重错误: {e}")
+                    log_parsing_error(input_filename, -1, {}, f"文件处理崩溃: {str(e)}")
 
                 operating_files_num += 1
                 if check_for_exit():
@@ -270,11 +284,11 @@ def main():
 
     begin_time = datetime.now()
     # 第一步：清理极旧文件
-    # batch_delete_min_file(tdx_vipdoc_dir)
+    batch_delete_min_file(tdx_vipdoc_dir, start_date_time)
 
     # 第二步：正式清洗数据
     print(f"\n开始执行数据清洗，异常记录将输出至: {ERROR_LOG_CSV}")
-    batch_delete_vipdoc(tdx_vipdoc_dir, start_date_time)
+    # batch_delete_vipdoc(tdx_vipdoc_dir, start_date_time)
 
     end_time = datetime.now()
     print(f"\n全部任务结束。")
