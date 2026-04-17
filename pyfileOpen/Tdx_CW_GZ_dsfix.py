@@ -1144,15 +1144,16 @@ def quick_ranking():
     print("测试日线数据读取...")
     test_code = '000001'
     price_data = ranker.get_latest_price_data(test_code)
+    stock_name = ranker.code_to_name.get(test_code)
     if price_data:
-        print(f"测试成功: 股票 {test_code}, 股价 {price_data['close']:.2f}元")
+        print(f"测试成功: 股票 {test_code}({stock_name}), 股价 {price_data['close']:.2f}元")
     else:
         print(f"测试失败: 无法获取股票 {test_code} 的股价数据")
         print("请检查日线数据文件路径是否正确")
         return
 
     print("\n正在计算综合财务与估值排名...")
-    df_comprehensive = ranker.rank_by_category(years=1, top_n=30, category='综合', test_mode=True)
+    df_comprehensive = ranker.rank_by_category(years=3, top_n=30, category='综合财务', test_mode=True)
 
     if not df_comprehensive.empty:
         print("\n" + "=" * 120)
@@ -1166,7 +1167,7 @@ def quick_ranking():
     print("\n" + "=" * 120)
     print("估值水平排名前20名:")
     print("=" * 120)
-    df_valuation = ranker.rank_by_category(years=1, top_n=20, category='估值', test_mode=True)
+    df_valuation = ranker.rank_by_category(years=3, top_n=20, category='估值', test_mode=True)
     if not df_valuation.empty:
         print(df_valuation.head(20).to_string(index=False))
     else:
@@ -1192,9 +1193,9 @@ def analyze_single_stock():
     stock_code = input("请输入股票代码: ").strip()
 
     # 获取最新财务数据
-    files = ranker.get_latest_year_files(2)
+    files = ranker.get_latest_year_files(3)
     if files:
-        latest_file = files[-2]
+        latest_file = files[-3]
         print(f'本次使用的财务文件为 {latest_file}')
         stocks_data = ranker.parse_all_stocks_in_file(latest_file, list(range(1, 584)), max_stocks=6000)
 
@@ -1208,7 +1209,7 @@ def analyze_single_stock():
                 # 计算估值指标
                 valuation_metrics = ranker.calculate_valuation_metrics(financial_data, price_data)
 
-                print(f"\n股票 {stock_code} 分析报告")
+                print(f"\n股票 {stock_code}（{TDXFinancialValuationRanker(cw_dir,day_data_dir,field_file,sector_file).code_to_name.get(stock_code)}）分析报告")
                 print("=" * 60)
                 print(f"当前股价: {price_data['close']:.2f}元")
                 print(f"日期: {price_data['date']}")
