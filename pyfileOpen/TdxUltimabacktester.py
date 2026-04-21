@@ -61,11 +61,13 @@ class TechnicalEngine:
             ma5 = talib.SMA(close, timeperiod=5)
             ma10 = talib.SMA(close, timeperiod=10)
             ma20 = talib.SMA(close, timeperiod=20)
+            ma60 = talib.SMA(close, timeperiod=60)
             vma5 = talib.SMA(volume, timeperiod=5)
+            vma10 = talib.SMA(volume, timeperiod=10)
 
-            res['bull'] = (ma5[-1] > ma10[-1] > ma20[-1])
+            res['bull'] = (close[-1] > ma5[-1] > ma10[-1] > ma20[-1] > ma60[-1])
             res['vol'] = (volume[-1] > vma5[-1] * 1.5)
-            res['exit'] = (close[-1] < ma20[-1])
+            res['exit'] = (close[-1] < ma20[-1]) or (close[-1] < ma60[-1])
             res['valid_data'] = True
             res['data_len'] = len(df_day)
         except Exception as e:
@@ -152,7 +154,7 @@ class TdxUltimateBacktester:
                 f.seek(0, 2)
                 f_size = f.tell()
                 # 至少读120个交易日以确保计算指标
-                f.seek(max(0, f_size - 32 * 1200))
+                f.seek(max(0, f_size - 32 * 9000))
                 while True:
                     data = f.read(32)
                     if len(data) < 32: break
@@ -246,4 +248,4 @@ if __name__ == "__main__":
     SECTOR_FILE = "二级行业板块.txt"
 
     tester = TdxUltimateBacktester(CW_DATA, DAY_DATA, SECTOR_FILE)
-    tester.run(start_year=2020, end_year=2024)
+    tester.run(start_year=2000, end_year=2020)

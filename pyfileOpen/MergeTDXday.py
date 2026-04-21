@@ -2,7 +2,7 @@ import struct
 from datetime import datetime,timedelta
 import os
 
-from pyfileOpen.OpenTdxDay import format_day_date_obj, read_tdx_day_file, validate_date_sequence
+from OpenTdxDay import format_day_date_obj, read_tdx_day_file, validate_date_sequence
 
 # from future.backports.datetime import timedelta
 # import shutil
