@@ -164,7 +164,10 @@ def delete_min_data(input_filename, start_dt):
         write_tdx_min_file(sorted_delete_data, input_filename)
 
 
-def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
+def batch_delete_vipdoc_optimized(vipdoc_root_path, import_start_date_time):
+    """
+    优化版本：在一次循环中完成删除老旧文件和删除早于设定时间点的记录
+    """
     vipdoc_path = Path(vipdoc_root_path)
     try:
         start_dt = datetime.strptime(import_start_date_time, "%Y%m%d")
@@ -179,6 +182,10 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
         'sz': ['minline', 'fzline', 'lday']
     }
 
+    deleted_files_num = 0
+    processed_files_num = 0
+    cleaned_files_num = 0
+
     for market, data_types in target_structures.items():
         market_path = vipdoc_path / market
         if not market_path.exists():
@@ -190,15 +197,37 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
                 continue
 
             # 获取所有lc1, lc5文件
-            files_to_process = glob.glob(os.path.join(data_type_path, '*.lc1')) + \
-                               glob.glob(os.path.join(data_type_path, '*.lc5'))
+            files_to_process = glob.glob(os.path.join(data_type_path, '*.lc[15]'))
 
             print(f"正在处理目录: {data_type_path}，待处理文件数: {len(files_to_process)}")
 
             for file_path in files_to_process:
                 input_file = Path(file_path)
+                processed_files_num += 1
+
+                # 第一步：检查是否为老旧文件（10950天前）
+                try:
+                    # 使用 read_tdx_min_file2 只读取最后一条记录来判断文件是否老旧
+                    min_data = read_tdx_min_file2(file_path)
+                    if min_data:
+                        try:
+                            end_date_time = format_minute_datetime_obj(min_data[0]['datetime'],
+                                                                       min_data[0]['timestamp'])
+                            # 检查文件是否老旧（10950天 ≈ 30年）
+                            if datetime.now() - end_date_time >= timedelta(days=10950):
+                                print(f"清理旧文件: {file_path}")
+                                delete_min_file(file_path)
+                                deleted_files_num += 1
+                                continue  # 文件已删除，跳过后续处理
+                        except Exception as e:
+                            log_parsing_error(file_path, 0, min_data[0] if min_data else {}, f"预检日期解析失败: {e}")
+                except Exception as e:
+                    print(f"预检文件 {file_path} 失败: {e}")
+
+                # 第二步：如果不是老旧文件，则处理删除早于设定时间点的记录
                 try:
                     delete_min_data(input_file, start_dt)
+                    cleaned_files_num += 1
                 except Exception as e:
                     # 顶层捕获，防止单个文件处理逻辑崩溃导致整个批处理停止
                     print(f"处理文件 {file_path} 时发生严重错误: {e}")
@@ -209,73 +238,10 @@ def batch_delete_vipdoc(vipdoc_root_path, import_start_date_time):
                     if response.lower() == 'y':
                         break
 
-    print("所有市场和数据类型的批量处理完成！")
-
-
-def batch_delete_min_file(vipdoc_root_path, import_start_date_time):
-    """
-    该函数保留原逻辑，但在关键解析位置增加防崩处理
-    """
-    vipdoc_path = Path(vipdoc_root_path)
-    try:
-        start_dt = datetime.strptime(import_start_date_time, "%Y%m%d")
-    except ValueError:
-        print("输入的日期格式有误，请使用 YYYYMMDD 格式")
-        return False
-
-    deleted_files_num = 0
-    operating_files_num = 0
-
-    target_structures = {
-        'bj': ['minline', 'fzline', 'lday'],
-        'ds': ['minline', 'fzline', 'lday'],
-        'sh': ['minline', 'fzline', 'lday'],
-        'sz': ['minline', 'fzline', 'lday']
-    }
-
-    for market, data_types in target_structures.items():
-        market_path = vipdoc_path / market
-        if not market_path.exists(): continue
-
-        for data_type in data_types:
-            data_type_path = market_path / data_type
-            if not data_type_path.exists(): continue
-
-            file_list = glob.glob(os.path.join(data_type_path, '*.lc[15]'))
-
-            for input_filename in file_list:
-                try:
-                    min_data = read_tdx_min_file2(input_filename)
-                    if min_data:
-                        # 增加解析保护
-                        try:
-                            end_date_time = format_minute_datetime_obj(min_data[0]['datetime'],
-                                                                       min_data[0]['timestamp'])
-                            if datetime.now() - end_date_time >= timedelta(days=10950):
-                                print(f"清理旧文件: {input_filename}")
-                                delete_min_file(input_filename)
-                                deleted_files_num += 1
-                                continue
-                        except Exception as e:
-                            log_parsing_error(input_filename, 0, min_data[0], f"预检日期解析失败: {e}")
-                except Exception as e:
-                    print(f"预检文件 {input_filename} 失败: {e}")
-
-                try:
-                    delete_min_data(input_filename, start_dt)
-                except Exception as e:
-                    # 顶层捕获，防止单个文件处理逻辑崩溃导致整个批处理停止
-                    print(f"处理文件 {input_filename} 时发生严重错误: {e}")
-                    log_parsing_error(input_filename, -1, {}, f"文件处理崩溃: {str(e)}")
-
-                operating_files_num += 1
-                if check_for_exit():
-                    response = input("\n已检测到中断信号，是否取消后续操作？(y/n): ")
-                    if response.lower() == 'y':
-                        break
-
-    print(f"预检清理完成！处理 {operating_files_num} 个，删除 {deleted_files_num} 个。")
-    return deleted_files_num
+    print(f"批量处理完成！")
+    print(f"处理文件总数: {processed_files_num}")
+    print(f"删除老旧文件数: {deleted_files_num}")
+    print(f"清洗数据文件数: {cleaned_files_num}")
 
 
 def main():
@@ -283,12 +249,10 @@ def main():
     start_date_time = '19800101'
 
     begin_time = datetime.now()
-    # 第一步：清理极旧文件
-    batch_delete_min_file(tdx_vipdoc_dir, start_date_time)
 
-    # 第二步：正式清洗数据
+    # 使用优化版本，在一次循环中完成两个任务
     print(f"\n开始执行数据清洗，异常记录将输出至: {ERROR_LOG_CSV}")
-    # batch_delete_vipdoc(tdx_vipdoc_dir, start_date_time)
+    batch_delete_vipdoc_optimized(tdx_vipdoc_dir, start_date_time)
 
     end_time = datetime.now()
     print(f"\n全部任务结束。")
