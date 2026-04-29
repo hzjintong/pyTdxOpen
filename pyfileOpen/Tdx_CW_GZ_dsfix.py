@@ -492,7 +492,7 @@ class TDXFinancialValuationRanker:
         revenue = stock_data.get(74, 0)  # 营业收入
         cash_flow = stock_data.get(107, 0)  # 经营活动现金流净额
         total_shares = stock_data.get(238, 0)  # 总股本
-        ebitda = stock_data.get(208, 0)  # EBITDA
+        ebitda = stock_data.get(208, 0)  # 息税折旧摊销前利润（EBITDA）
         profit_growth = stock_data.get(184, 0)  # 净利润增长率
         dividend = stock_data.get(125, 0)  # 分配股利、利润或偿付利息支付的现金
 
@@ -644,7 +644,7 @@ class TDXFinancialValuationRanker:
         asset_turnover = latest_data.get(175, 0)
         financial_scores['asset_turnover'] = asset_turnover
 
-        # 现金流得分
+        # 现金流得分 - 使用经营活动现金流净额，标准化处理，字段107经营活动现金流净额，用亿元为单位，并限幅在[-10, 10]之间
         cash_flow = latest_data.get(107, 0)
         # 避免除以0或过大值
         if abs(cash_flow) > 1e10:
@@ -718,7 +718,7 @@ class TDXFinancialValuationRanker:
 
         return total_score
 
-    # ==================== 修改点：rank_by_category 利用多期数据 ====================
+    # ==================== 修改点：rank_by_category 利用多期数据，按类别排名 ====================
     def rank_by_category(self, years=5, top_n=100, category='综合财务', test_mode=False):
         """
         按类别进行排名
@@ -1193,9 +1193,9 @@ def analyze_single_stock():
     stock_code = input("请输入股票代码: ").strip()
 
     # 获取最新财务数据
-    files = ranker.get_latest_year_files(3)
+    files = ranker.get_latest_year_files(2)
     if files:
-        latest_file = files[-3]
+        latest_file = files[-2]
         print(f'本次使用的财务文件为 {latest_file}')
         stocks_data = ranker.parse_all_stocks_in_file(latest_file, list(range(1, 584)), max_stocks=6000)
 
