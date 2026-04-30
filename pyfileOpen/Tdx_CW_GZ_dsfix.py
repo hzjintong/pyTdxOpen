@@ -636,9 +636,11 @@ class TDXFinancialValuationRanker:
         current_ratio = latest_data.get(159, 0)
         financial_scores['current_ratio'] = current_ratio
 
-        # 资产负债率（反向指标）
+        # 资产负债率（反向指标） - 越低越好，转换为正向分数
         debt_ratio = latest_data.get(210, 0)
-        financial_scores['debt_ratio'] = 100 - debt_ratio if debt_ratio > 0 else 0
+        # financial_scores['debt_ratio'] = 100 - debt_ratio if debt_ratio > 0 else 0
+        # 资产负债率（反向指标） - 取 100 - 资产负债率，并限幅在[0 - 100]之间，避免负值
+        financial_scores['debt_ratio'] = 100 - debt_ratio if 0 < debt_ratio < 100 else (0 if debt_ratio >= 100 else 100)
 
         # 总资产周转率
         asset_turnover = latest_data.get(175, 0)
@@ -646,9 +648,9 @@ class TDXFinancialValuationRanker:
 
         # 现金流得分 - 使用经营活动现金流净额，标准化处理，字段107经营活动现金流净额，用亿元为单位，并限幅在[-10, 10]之间
         cash_flow = latest_data.get(107, 0)
-        # 避免除以0或过大值
-        if abs(cash_flow) > 1e10:
-            cash_flow = 0
+        # 避免除以0或过大值，这个暂时去掉，A股上市公司现金流净额可能很大，比如工商银行，分红都有几百亿
+        # if abs(cash_flow) > 1e10:  # 100亿以上视为异常
+        #     cash_flow = 0
         financial_scores['cash_flow'] = cash_flow / 1e9 if cash_flow != 0 else 0
 
         # 计算估值指标得分（注意：有些指标是越低越好，有些是越高越好）

@@ -1,3 +1,4 @@
+from datetime import datetime
 from op_tdx_financial_db import TDXFinancialDB
 
 if __name__ == '__main__':
@@ -8,11 +9,23 @@ if __name__ == '__main__':
     db = TDXFinancialDB(CW_DIR, FIELD_TXT, DB_PATH)
 
     # 第一步：创建表结构
-    db.create_table()
-    db.create_field_desc_table()  # 可选，存储字段说明
+    # db.create_table()
+    # db.create_field_desc_table()  # 可选，存储字段说明
 
     # 第二步：全量导入（如 2000-2025）
-    db.batch_import(start_year=1988, end_year=2026)
+    # db.batch_import(start_year=1988, end_year=2026)
 
     # 后续增量更新（当目录下出现新的 gpcw 文件时执行）
     # db.incremental_update()
+
+    # 更新字段说明表
+    db.sync_field_desc_table()
+
+    # 新的执行增量同步，检测所有文件的变化，并输出 Excel 日志
+    time_stamp = datetime.now().strftime("%Y%m%d%H%M")
+    db.sync_and_log_changes(
+        start_year=1988,
+        end_year=2030,
+        export_excel=True,
+        excel_path=f"财务数据变更日志_{time_stamp}.xlsx"
+    )

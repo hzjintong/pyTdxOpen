@@ -2,6 +2,7 @@ import os
 import re
 import sqlite3
 from struct import unpack, calcsize
+import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 
@@ -120,6 +121,157 @@ class TDXFinancialDB:
         """从文件名 gpcwYYYYMMDD.dat 中提取报告期日期 YYYYMMDD"""
         date_str = filename[4:12]
         return int(date_str)
+
+    def _get_existing_record(self, cursor, stock_code: str, report_date: int) -> Optional[Tuple]:
+        """获取某只股票某报告期的全部字段值，不存在则返回 None"""
+        cursor.execute(f"SELECT * FROM financial_data WHERE stock_code=? AND report_date=?",
+                       (stock_code, report_date))
+        row = cursor.fetchone()
+        if row is None:
+            return None
+        # 返回的 row 结构为 (id, stock_code, report_date, field_1, ..., field_584)
+        # 我们只需要字段值部分（index 3 开始）
+        return row[3:]  # 584个值
+
+    def sync_and_log_changes(self, start_year: int = 2000, end_year: int = 2030,
+                             export_excel: bool = True, excel_path: str = "changes_log.xlsx",
+                             tolerance: float = 1e-6):
+        """
+        同步所有财务文件，检测变化并更新，可选输出 Excel 日志。
+
+        Args:
+            start_year: 处理文件的起始年份
+            end_year: 处理文件的结束年份
+            export_excel: 是否导出变更日志为 Excel
+            excel_path: Excel 输出路径
+            tolerance: 浮点数比较容差，小于此值视为无变化
+        """
+        # 收集文件
+        files = []
+        for fname in os.listdir(self.cw_dir):
+            if fname.startswith('gpcw') and fname.endswith('.dat'):
+                try:
+                    year = int(fname[4:8])
+                    if start_year <= year <= end_year:
+                        report_date = self._extract_report_date(fname)
+                        files.append((fname, report_date))
+                except ValueError:
+                    continue
+        files.sort(key=lambda x: x[1])
+
+        if not files:
+            print("没有找到符合条件的财务数据文件。")
+            return
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # 用于收集所有变更记录
+        change_records = []  # 每个元素为 (文件, 股票, 报告期, 字段ID, 字段名, 旧值, 新值)
+        total_inserted = 0
+        total_updated = 0
+        total_changed_fields = 0
+
+        for fname, report_date in files:
+            fpath = os.path.join(self.cw_dir, fname)
+            print(f"正在处理文件: {fname} (报告期: {report_date})")
+
+            # ---------- 修正点：记录处理本文件前的累计值 ----------
+            total_updated_before = total_updated
+            total_changed_fields_before = total_changed_fields
+
+            stocks = self._parse_file_stocks(fpath)
+            if not stocks:
+                continue
+
+            batch_insert = []  # 尚未存在，待插入
+            num_file_inserted = 0
+            batch_update = []  # 发生变化，待更新 (stock_code, new_values_tuple)
+
+            for code, foa in stocks:
+                new_values = self._read_stock_data(fpath, foa)
+                if new_values is None:
+                    continue
+
+                existing = self._get_existing_record(cursor, code, report_date)
+
+                if existing is None:
+                    # 新股票，直接插入
+                    row = [code, report_date] + list(new_values)
+                    batch_insert.append(row)
+                    num_file_inserted += 1
+                else:
+                    # 逐字段比较
+                    changed = False
+                    field_diffs = []  # (field_id, old, new)
+                    for fid in range(1, 585):
+                        old_val = existing[fid - 1]
+                        new_val = new_values[fid - 1]
+                        # 比较逻辑：处理None和浮点数容差
+                        if old_val is None and new_val is None:
+                            continue
+                        elif old_val is None or new_val is None:
+                            changed = True
+                            field_diffs.append((fid, old_val, new_val))
+                        else:
+                            # 浮点数比较
+                            try:
+                                diff = abs(old_val - new_val)
+                                if diff > tolerance:
+                                    changed = True
+                                    field_diffs.append((fid, old_val, new_val))
+                            except TypeError:
+                                if old_val != new_val:
+                                    changed = True
+                                    field_diffs.append((fid, old_val, new_val))
+
+                    if changed:
+                        # 记录变化日志
+                        for fid, old_val, new_val in field_diffs:
+                            field_name = self.field_names.get(fid, f"field_{fid}")
+                            change_records.append((
+                                fname, code, report_date, fid, field_name, old_val, new_val
+                            ))
+                        total_changed_fields += len(field_diffs)
+
+                        # 更新数据库：用新值覆盖全部字段（简化处理，也可只更新变化的字段）
+                        # 这里直接用 REPLACE 思想，执行 UPDATE SET field_1=?, ... WHERE ...
+                        update_sql = f"UPDATE financial_data SET {', '.join([f'field_{i}=?' for i in range(1, 585)])} WHERE stock_code=? AND report_date=?"
+                        params = list(new_values) + [code, report_date]
+                        cursor.execute(update_sql, params)
+                        total_updated += 1
+                    # 若无变化则跳过
+
+            # 批量插入本文件的新股票记录
+            if batch_insert:
+                field_cols = [f"field_{i}" for i in range(1, 585)]
+                placeholders = ','.join(['?'] * (2 + 584))
+                insert_sql = f"INSERT INTO financial_data (stock_code, report_date, {','.join(field_cols)}) VALUES ({placeholders})"
+                cursor.executemany(insert_sql, batch_insert)
+                total_inserted += num_file_inserted  #  len(batch_insert)
+                conn.commit()
+
+            # 提交更新（上面的更新已经即时执行，但为了事务安全可以累积后统一提交）
+            conn.commit()
+
+            # -------------------修正点，计算本文件的增量并输出---------------------------
+            file_updated = total_updated - total_updated_before
+            file_changed_fields = total_changed_fields - total_changed_fields_before
+            print(f"  -> 新增 {num_file_inserted} 只股票，更新 {file_updated} 只股票，字段变化 {file_changed_fields }")
+            # 记录本文件处理完后的计数，以便输出每次变化量（简化起见此处略去精确跟踪，整体统计即可）
+
+        conn.close()
+
+        print(f"同步完成：共新增记录 {total_inserted}，更新记录 {total_updated}，修改字段数 {total_changed_fields}")
+
+        if export_excel and change_records:
+            df_log = pd.DataFrame(change_records, columns=[
+                "文件", "股票代码", "报告期", "字段ID", "字段名称", "旧值", "新值"
+            ])
+            df_log.to_excel(excel_path, index=False)
+            print(f"变更日志已导出至: {excel_path}")
+        elif not change_records:
+            print("本次同步未检测到任何数据变化。")
 
     def batch_import(self, start_year: int = 2000, end_year: int = 2030, chunksize: int = 2000):
         """
@@ -263,3 +415,13 @@ class TDXFinancialDB:
         conn.commit()
         conn.close()
         print("字段说明表 field_description 已创建。")
+
+    # 可选：再次同步刷新财务字段说明到数据库，便于补充新的字段说明
+    def sync_field_desc_table(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        data = [(fid, f"field_{fid}", name) for fid, name in self.field_names.items()]
+        cursor.executemany("INSERT OR REPLACE INTO field_description VALUES (?,?,?)", data)
+        conn.commit()
+        conn.close()
+        print("字段说明表 field_description 已更新同步。")
