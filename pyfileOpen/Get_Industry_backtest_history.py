@@ -354,13 +354,13 @@ class TDXFinancialValuationRanker:
 
     def get_latest_year_files(self, years=3):
         """
-        获取最近几年的财务数据文件
+        获取最近几年的财务数据文件（返回指定年份内的所有季度文件）
 
         Args:
             years: 最近多少年
 
         Returns:
-            排序后的文件路径列表
+            排序后的文件路径列表（包含最近years年内所有可用的季度文件）
         """
         # 获取所有文件
         all_files = []
@@ -369,21 +369,23 @@ class TDXFinancialValuationRanker:
                 date_str = filename[4:12]  # gpcwYYYYMMDD.dat
                 all_files.append((filename, date_str))
 
+        if not all_files:
+            return []
+
         # 按日期排序
         all_files.sort(key=lambda x: x[1], reverse=True)
 
-        # 获取最近几年的文件（每年取最新的季度报告）
+        # 找到最新文件的年份
+        latest_year = int(all_files[0][1][:4])
+        # 计算截止年份：包含最近years年（含当前年份）
+        cutoff_year = latest_year - years + 1
+
+        # 收集所有在截止年份之后（含）的文件
         latest_files = []
-        processed_years = set()
-
         for filename, date_str in all_files:
-            year = date_str[:4]
-            if year not in processed_years:
-                processed_years.add(year)
+            year = int(date_str[:4])
+            if year >= cutoff_year:
                 latest_files.append((filename, date_str))
-
-            if len(processed_years) >= years:
-                break
 
         # 按日期正序排列
         latest_files.sort(key=lambda x: x[1])
@@ -570,25 +572,25 @@ class TDXFinancialValuationRanker:
         if not stock_data_dict:
             return 0
 
-        # 财务指标权重
+        # 财务指标权重，共占比70%
         financial_weights = {
-            'roe': 0.20,  # 盈利能力
-            'profit_margin': 0.10,
-            'revenue_growth': 0.10,  # 成长能力
-            'profit_growth': 0.10,
-            'current_ratio': 0.05,  # 偿债能力
-            'debt_ratio': 0.05,  # 财务健康度（反向）
-            'asset_turnover': 0.05,  # 运营效率
+            'roe': 0.20,  # 盈利能力，占比最高，对应净资产收益率
+            'profit_margin': 0.10,  # 盈利能力，对应净利润率
+            'revenue_growth': 0.10,  # 成长能力，对应营收增长率
+            'profit_growth': 0.10,  # 成长能力，对应净利润增长率
+            'current_ratio': 0.05,  # 偿债能力，对应流动比率
+            'debt_ratio': 0.05,  # 财务健康度（反向），对应资产负债率
+            'asset_turnover': 0.05,  # 运营效率，对应总资产周转率
             'cash_flow': 0.05,  # 现金流
         }
 
-        # 估值指标权重
+        # 估值指标权重，共占比30%
         valuation_weights = {
-            'pe': 0.10,  # 越低越好
-            'pb': 0.10,  # 越低越好
-            'ps': 0.05,  # 越低越好
-            'peg': 0.05,  # 越低越好
-            'dividend_yield': 0.05,  # 越高越好
+            'pe': 0.0857,  # 越低越好，原设置是0.1
+            'pb': 0.0857,  # 越低越好，原设置是0.1
+            'ps': 0.04285,  # 越低越好，原设置是0.05
+            'peg': 0.04285,  # 越低越好，原设置是0.05
+            'dividend_yield': 0.0429,  # 股息收益率越高越好，原设置是0.05
         }
 
         # 获取最新报告期和前一期数据
@@ -1263,10 +1265,10 @@ def analyze_single_stock():
     stock_code = input("请输入股票代码: ").strip()
 
     # 获取最新财务数据
-    files = ranker.get_latest_year_files(1)
+    files = ranker.get_latest_year_files(2)
     if files:
-        latest_file = files[-1]
-        stocks_data = ranker.parse_all_stocks_in_file(latest_file, list(range(1, 300)), max_stocks=10)
+        latest_file = files[-2]
+        stocks_data = ranker.parse_all_stocks_in_file(latest_file, list(range(1, 584)), max_stocks=6000)
 
         if stock_code in stocks_data:
             financial_data = stocks_data[stock_code]
