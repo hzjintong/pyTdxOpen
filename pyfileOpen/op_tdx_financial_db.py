@@ -70,6 +70,18 @@ class TDXFinancialDB:
         conn.close()
         print("数据库表 financial_data 及索引创建完毕。")
 
+    def reset_financial_table(self):
+        """仅删除并重建 financial_data 表及其索引，不影响数据库中的其他表"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        # 删除表（如果存在）
+        cursor.execute("DROP TABLE IF EXISTS financial_data")
+        conn.commit()
+        conn.close()
+        print("原有 financial_data 表已删除。")
+        # 重新创建表结构及索引
+        self.create_table()
+
     def _parse_file_stocks(self, file_path: str) -> List[Tuple[str, int]]:
         """
         解析单个 gpcw.dat 文件，返回所有股票的 (stock_code, foa) 列表
@@ -94,6 +106,38 @@ class TDXFinancialDB:
         except Exception as e:
             print(f"解析文件索引失败 {file_path}: {e}")
         return stocks
+
+    def _parse_file_stocks_dedup(self, file_path: str) -> List[Tuple[str, int]]:
+        """
+        解析单个 gpcw.dat 文件，返回所有股票的 (stock_code, foa) 列表。
+        对于同一股票代码出现多次的重复记录，只保留最后一次出现的（后出现的值经实证为正确版本）。
+        """
+        stocks = []
+        try:
+            with open(file_path, 'rb') as f:
+                header_size = calcsize("<3h1H3L")
+                header = f.read(header_size)
+                stock_header = unpack("<3h1H3L", header)
+                max_count = stock_header[3]
+
+                stock_item_size = calcsize("<6s1c1L")
+                for i in range(max_count):
+                    f.seek(header_size + i * stock_item_size)
+                    data = f.read(stock_item_size)
+                    if len(data) < stock_item_size:
+                        break
+                    code_bytes, flag, foa = unpack("<6s1c1L", data)
+                    code = code_bytes.decode('gbk', errors='ignore').strip('\x00')
+                    stocks.append((code, foa))
+        except Exception as e:
+            print(f"解析文件索引失败 {file_path}: {e}")
+            return stocks
+
+        # ---- 去重逻辑：对同一股票代码，只保留最后一次出现的记录 ----
+        seen = {}
+        for code, foa in stocks:
+            seen[code] = foa  # 后出现的会覆盖前面的，即保留最后一次
+        return list(seen.items())
 
     def _read_stock_data(self, file_path: str, foa: int) -> Optional[Tuple[float, ...]]:
         """读取指定偏移处的 584 个 float"""
@@ -180,7 +224,8 @@ class TDXFinancialDB:
             total_updated_before = total_updated
             total_changed_fields_before = total_changed_fields
 
-            stocks = self._parse_file_stocks(fpath)
+            # 解析文件中的股票列表，修正为 _parse_file_stocks_dedup 新增的去重版本
+            stocks = self._parse_file_stocks_dedup(fpath)
             if not stocks:
                 continue
 
@@ -309,7 +354,7 @@ class TDXFinancialDB:
         for fname, report_date in files:
             fpath = os.path.join(self.cw_dir, fname)
             print(f"处理文件: {fname} (报告期: {report_date})")
-            stocks = self._parse_file_stocks(fpath)
+            stocks = self._parse_file_stocks_dedup(fpath)  # 返回 [(code, foa), ...替换为新增的去重版本
             if not stocks:
                 print(f"  -> 文件无有效股票数据")
                 continue
@@ -374,7 +419,7 @@ class TDXFinancialDB:
         for fname, report_date in files_to_import:
             fpath = os.path.join(self.cw_dir, fname)
             print(f"更新文件: {fname}")
-            stocks = self._parse_file_stocks(fpath)
+            stocks = self._parse_file_stocks_dedup(fpath)  # 使用去重版本
             batch = []
             for code, foa in stocks:
                 values = self._read_stock_data(fpath, foa)
@@ -425,3 +470,101 @@ class TDXFinancialDB:
         conn.commit()
         conn.close()
         print("字段说明表 field_description 已更新同步。")
+
+    def scan_duplicates(self, start_year: int = 1988, end_year: int = 2030,
+                        output_excel: str = "duplicate_stocks_log.xlsx",
+                        tolerance: float = 1e-6):
+        """
+        扫描 gpcw*.dat 文件，检测同一文件内同一股票代码是否出现多次，
+        若重复，则逐对比较所有字段，记录差异字段，并输出到 Excel。
+
+        Args:
+            start_year: 起始年份
+            end_year: 结束年份
+            output_excel: 输出的 Excel 路径
+            tolerance: 浮点数比较容差
+        """
+        # 收集目标文件
+        files = []
+        for fname in os.listdir(self.cw_dir):
+            if fname.startswith('gpcw') and fname.endswith('.dat'):
+                try:
+                    year = int(fname[4:8])
+                    if start_year <= year <= end_year:
+                        files.append(fname)
+                except ValueError:
+                    continue
+        files.sort()
+        if not files:
+            print("没有找到符合年份条件的文件。")
+            return
+
+        records = []  # 每条纪录: (文件, 股票代码, FOA1, FOA2, 字段ID, 字段名, 值1, 值2)
+        total_dup_codes = 0
+
+        for fname in files:
+            fpath = os.path.join(self.cw_dir, fname)
+            stocks = self._parse_file_stocks_dedup(fpath)  # List[Tuple[str, int]]，使用了去重版本
+            if not stocks:
+                continue
+
+            # 统计重复的股票代码
+            code_to_foas = {}
+            for code, foa in stocks:
+                code_to_foas.setdefault(code, []).append(foa)
+            dup_codes = {code: foas for code, foas in code_to_foas.items() if len(foas) > 1}
+            if not dup_codes:
+                continue
+
+            for code, foa_list in dup_codes.items():
+                total_dup_codes += 1
+                # 读取所有重复记录的完整数据
+                datas = []
+                for foa in foa_list:
+                    vals = self._read_stock_data(fpath, foa)
+                    if vals is None:
+                        datas.append(None)
+                    else:
+                        datas.append(vals)  # tuple of 584 floats
+
+                # 两两比较：以第一个为基准，与后续每一个比较
+                base_data = datas[0]
+                if base_data is None:
+                    print(f"  警告：{fname} 中 {code} 的 FOA={foa_list[0]} 无法读取，跳过")
+                    continue
+
+                for i in range(1, len(foa_list)):
+                    cmp_data = datas[i]
+                    if cmp_data is None:
+                        print(f"  警告：{fname} 中 {code} 的 FOA={foa_list[i]} 无法读取，跳过")
+                        continue
+
+                    # 比较 584 个字段
+                    for fid in range(1, 585):
+                        v1 = base_data[fid - 1]
+                        v2 = cmp_data[fid - 1]
+                        if v1 is None and v2 is None:
+                            continue
+                        if v1 is None or v2 is None:
+                            diff = True
+                        else:
+                            try:
+                                diff = abs(v1 - v2) > tolerance
+                            except TypeError:
+                                diff = v1 != v2
+                        if diff:
+                            field_name = self.field_names.get(fid, f"field_{fid}")
+                            records.append((
+                                fname, code, foa_list[0], foa_list[i],
+                                fid, field_name, v1, v2
+                            ))
+
+        if records:
+            df = pd.DataFrame(records, columns=[
+                "文件", "股票代码", "FOA1", "FOA2", "字段ID", "字段名称", "值1", "值2"
+            ])
+            df.to_excel(output_excel, index=False)
+            print(f"共发现 {total_dup_codes} 只重复股票，差异记录 {len(records)} 条。")
+            print(f"日志已导出至: {output_excel}")
+        else:
+            print("未发现任何重复股票记录。")
