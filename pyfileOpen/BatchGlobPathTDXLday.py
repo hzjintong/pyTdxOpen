@@ -10,6 +10,8 @@ from tqdm import tqdm
 import concurrent.futures
 import threading
 import random
+import sys
+import time as time_module
 
 # 线程安全的计数器
 file_counter = 0
@@ -19,8 +21,12 @@ counter_lock = threading.Lock()
 def check_for_exit():
     """检查是否按下了退出键"""
     # if keyboard.is_pressed('CTRL+q') or keyboard.is_pressed('esc'):
-    if keyboard.is_pressed('CTRL+q') :
-        return True
+    try:
+        if keyboard.is_pressed('CTRL+q') :
+            return True
+    except:
+        # keyboard库在某些环境下可能出错，忽略
+        pass
     return False
 
 # 假设这是您之前写好的合并两个文件的数据函数
@@ -309,8 +315,8 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
 
     # 因为涉及多个市场，bj, ds, sh, sz 等多个市场。不同市场的文件大小差异巨大（比如沪深 vs 北交所）
     # 打乱任务顺序。这样可以避免程序在某一段时间集中处理一堆超大文件，导致某些线程空转等待，让 CPU 负载更平滑
-    random.shuffle(min_tasks)
-    random.shuffle(day_tasks)
+    # random.shuffle(min_tasks)
+    # random.shuffle(day_tasks)
 
     # 询问用户是否开始处理
     if min_tasks or day_tasks:
@@ -324,8 +330,8 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
     # Gemini建议 2：针对双核 CPU 和 3.14t 调整线程数
     # 你的 i3-5010U 有 4 个逻辑核心，建议 4-6 个线程
     # max_workers = os.cpu_count() + 1
-    # max_workers = min(32, (os.cpu_count() or 1) * 4)  # 根据CPU核心数设置线程数
-    max_workers = 24  # 根据i7 CPU核心数设置线程数
+    # max_workers = min(32, (os.cpu_count() or 1) * 4)  # 根据i7 CPU核心数设置线程数
+    max_workers = 15  # 根据i7 CPU核心数设置线程数 24
 
     # 处理分钟文件
     user_interrupted = False  # 将变量声明移到if语句外部
@@ -357,18 +363,23 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
                                 break
 
                         try:
-                            result = future.result()
+                            # 设置超时，防止单个任务卡死（每个任务最多5分钟）
+                            result = future.result(timeout=300)
                             if result == 1:
                                 success_count += 1
                             else:
                                 fail_count += 1
+                            pbar.update(1)
+                        except concurrent.futures.TimeoutError:
+                            print(f"\n警告：某个分钟文件处理任务超时（超过5分钟），已跳过")
+                            fail_count += 1
                             pbar.update(1)
                         except concurrent.futures.CancelledError:
                             # 任务被取消
                             pbar.update(1)
                             continue
                         except Exception as e:
-                            print(f"处理任务时发生错误: {e}")
+                            print(f"\n处理任务时发生错误: {e}")
                             fail_count += 1
                             pbar.update(1)
 
@@ -389,14 +400,24 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
 
     # 如果分钟文件处理被中断，询问是否继续处理日线文件
     if day_tasks and not user_interrupted:
+        print("\n" + "="*60)
+        print(f"分钟文件处理已完成！接下来还有 {len(day_tasks)} 个日线文件待处理。")
+        print("="*60)
+        print("【注意】程序正在等待您的输入确认...")
+        print("如果没有任何反应，请在下方输入 y 或 n 后按回车键")
+        print("="*60)
         response = input("是否继续处理日线文件？(y/n): ")
         if response.lower() != 'y':
             print("用户取消日线文件处理")
             return file_counter
+        print("="*60)
+        print("开始处理日线文件...")
+        print("="*60)
 
     # 处理日线文件
     if day_tasks and not user_interrupted:
         print(f"开始并行处理日线文件，使用 {max_workers} 个线程...")
+        print(f"共 {len(day_tasks)} 个日线文件任务")
         success_count = 0
         fail_count = 0
 
@@ -420,18 +441,23 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
                                 break
 
                         try:
-                            result = future.result()
+                            # 设置超时，防止单个任务卡死（每个任务最多5分钟）
+                            result = future.result(timeout=300)
                             if result == 1:
                                 success_count += 1
                             else:
                                 fail_count += 1
+                            pbar.update(1)
+                        except concurrent.futures.TimeoutError:
+                            print(f"\n警告：某个日线文件处理任务超时（超过5分钟），已跳过")
+                            fail_count += 1
                             pbar.update(1)
                         except concurrent.futures.CancelledError:
                             # 任务被取消
                             pbar.update(1)
                             continue
                         except Exception as e:
-                            print(f"处理任务时发生错误: {e}")
+                            print(f"\n处理任务时发生错误: {e}")
                             fail_count += 1
                             pbar.update(1)
 
@@ -457,10 +483,10 @@ def main():
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     path_structures = {
-        'bj': ['minline', 'fzline', 'lday'],
-        'ds': ['minline', 'fzline', 'lday'],
-        'sh': ['minline', 'fzline', 'lday'],
-        'sz': ['minline', 'fzline', 'lday']
+        'bj': ['lday'],
+        'ds': ['lday'],
+        'sh': ['lday'],
+        'sz': ['lday']
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
     }
 
@@ -475,11 +501,18 @@ def main():
         begin_time = datetime.now()
         file_op_num = batch_merge_vipdoc(tdx_vipdoc_dir, taget_vipdoc_path, path_structures)
         end_time = datetime.now()
-        print(f"共处理了 {file_op_num} 个文件，所有市场和数据类型的批量处理完成！")
+        print("\n" + "="*60)
+        print(f"✅ 所有处理已完成！共处理了 {file_op_num} 个文件。")
+        print("="*60)
         delta_time = abs( end_time - begin_time )
         print(f"处理开始时间 {begin_time.strftime('%Y/%m/%d %H:%M')}，结束时间 {end_time.strftime('%Y/%m/%d %H:%M:%S')}, 共用时 { delta_time }")
+        print("="*60)
+        print("程序即将正常退出...")
+        print("="*60)
     except Exception as er:
-        print(f"文件处理异常，错误为：{er}")
+        print(f"❌ 文件处理异常，错误为：{er}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
     main()
