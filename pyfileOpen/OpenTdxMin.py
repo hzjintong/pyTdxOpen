@@ -89,8 +89,8 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
 
             record_number = size // record_size
 
-            if record_number != 0 :
-                print(f"文件{file_path}中约有（{record_number}）条记录。")
+            # if record_number != 0 :
+            #     print(f"文件{file_path}中约有（{record_number}）条记录。")
 
             if size % record_size != 0 :
                 print(f"警告: 文件大小({size}字节)不是{record_size}字节的整数倍，可能存在数据不完整")
