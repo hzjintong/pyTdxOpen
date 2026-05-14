@@ -11,12 +11,13 @@ if __name__ == '__main__':
     # 第一步：创建表结构
     # db.create_table()
     # db.create_field_desc_table()  # 可选，存储字段说明
+    # db.reset_financial_table()
 
     # 第二步：全量导入（如 2000-2025）
-    # db.batch_import(start_year=1988, end_year=2026)
+    # db.batch_import(start_year=1988, end_year=2027)
 
-    # 后续增量更新（当目录下出现新的 gpcw 文件时执行）
-    # db.incremental_update()
+    # 后续增量更新（当 cw 目录下出现新的 gpcw 文件时执行）
+    db.incremental_update()
 
     # 更新字段说明表
     db.sync_field_desc_table()
@@ -28,4 +29,12 @@ if __name__ == '__main__':
         end_year=2030,
         export_excel=True,
         excel_path=f"财务数据变更日志_{time_stamp}.xlsx"
+    )
+
+    # 扫描重复记录并导出 Excel
+    db.scan_duplicates(
+        start_year=1988,
+        end_year=2030,
+        output_excel=f"重复股票检测报告_{time_stamp}.xlsx",
+        tolerance=1e-6  # 容忍度
     )
