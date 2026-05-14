@@ -554,42 +554,29 @@ class TDXFinancialValuationRanker:
 
         return metrics
 
-    # ==================== 修改点：calculate_comprehensive_score 利用多期数据计算增长率 ====================
     @staticmethod
-    def calculate_comprehensive_score(stock_data_dict, valuation_metrics):
+    def calculate_pure_financial_metrics(stock_data_dict):
         """
-        计算股票综合得分（财务+估值）
-
+        计算纯财务指标（不依赖估值数据）
         Args:
-            stock_data_dict: 包含多个报告期数据的字典，键为日期字符串（如'20231231'），值为该期财务数据字典
-            valuation_metrics: 估值指标字典
-
+            stock_data_dict: 股票数据字典
         Returns:
-            综合得分
+            财务指标得分
         """
         if not stock_data_dict:
             return 0
 
-        # 财务指标权重
+         # 财务指标权重
         financial_weights = {
-            'roe': 0.20,  # 盈利能力
-            'profit_margin': 0.10,
-            'revenue_growth': 0.10,  # 成长能力
-            'profit_growth': 0.10,
-            'current_ratio': 0.05,  # 偿债能力
-            'debt_ratio': 0.05,  # 财务健康度（反向）
-            'asset_turnover': 0.05,  # 运营效率
-            'cash_flow': 0.05,  # 现金流
-        }
-
-        # 估值指标权重
-        valuation_weights = {
-            'pe': 0.10,  # 越低越好
-            'pb': 0.10,  # 越低越好
-            'ps': 0.05,  # 越低越好
-            'peg': 0.05,  # 越低越好
-            'dividend_yield': 0.05,  # 越高越好
-        }
+            'roe': 0.30,  # 盈利能力，原考虑和估值权重合计时设为0.2，这里调整仅财务为0.3，后期再调整财务和估值权重，整体降为0.7
+            'profit_margin': 0.12,  # 盈利能力，原0.1
+            'revenue_growth': 0.18,  # 成长能力，原0.1
+            'profit_growth': 0.18,  # 成长能力，原0.1
+            'current_ratio': 0.04,  # 偿债能力，原0.05
+            'debt_ratio': 0.04,  # 财务健康度（反向），原0.05
+            'asset_turnover': 0.05,  # 运营效率，原0.05
+            'cash_flow': 0.09,  # 现金流，原0.05
+            }
 
         # 获取最新报告期和前一期数据
         sorted_dates = sorted(stock_data_dict.keys())
@@ -599,6 +586,8 @@ class TDXFinancialValuationRanker:
 
         # 计算财务指标得分
         financial_scores = {}
+
+        # 计算各指标得分
 
         # ROE (净资产收益率)
         roe = latest_data.get(197, 0)
@@ -649,7 +638,144 @@ class TDXFinancialValuationRanker:
         # 现金流得分 - 使用经营活动现金流净额，标准化处理，字段107经营活动现金流净额，用亿元为单位，并限幅在[-10, 10]之间
         cash_flow = latest_data.get(107, 0)
         # 避免除以0或过大值，这个暂时去掉，A股上市公司现金流净额可能很大，比如工商银行，分红都有几百亿
-        # if abs(cash_flow) > 1e10:  # 100亿以上视为异常
+        # if abs(cash_flow) > 1e10:  # 100亿以上视为异常，这个设置本身就有问题，
+        #     cash_flow = 0
+        financial_scores['cash_flow'] = cash_flow / 1e9 if cash_flow != 0 else 0
+
+        # 标准化处理
+        def normalize_scores(scores_dict):
+            if not scores_dict:
+                return {}
+
+            # 找到最大值（排除异常值）
+            valid_values = [abs(v) for v in scores_dict.values() if 0 < abs(v) < 1e6]
+            if not valid_values:
+                return {k: 0 for k in scores_dict.keys()}
+
+            max_val = max(valid_values)
+            if max_val == 0:
+                return {k: 0 for k in scores_dict.keys()}
+
+            normalized = {}
+            for key, value in scores_dict.items():
+                if 0 < abs(value) < 1e6:  # 排除异常值
+                    normalized[key] = value / max_val
+                else:
+                    normalized[key] = 0
+
+            return normalized
+
+        # 标准化财务指标得分
+        normalized_financial = normalize_scores(financial_scores)
+
+        # 计算综合得分，申明变量
+        financial_score = 0.0
+
+        # 财务指标部分
+        for indicator, weight in financial_weights.items():
+            score = normalized_financial.get(indicator, 0)
+            financial_score += score * weight
+
+        return financial_score
+
+    # ==================== 修改点：calculate_comprehensive_score 利用多期数据计算增长率 ====================
+    @staticmethod
+    def calculate_comprehensive_score(stock_data_dict, valuation_metrics):
+        """
+        计算股票综合得分（财务+估值）
+
+        Args:
+            stock_data_dict: 包含多个报告期数据的字典，键为日期字符串（如'20231231'），值为该期财务数据字典
+            valuation_metrics: 估值指标字典
+
+        Returns:
+            综合得分
+        """
+        if not stock_data_dict:
+            return 0
+
+        # 财务指标权重
+        financial_weights = {
+            'roe': 0.30,  # 盈利能力，原考虑和估值权重合计时设为0.2，这里调整仅财务为0.3，后期再调整财务和估值权重，整体降为0.7
+            'profit_margin': 0.12,  # 盈利能力，原0.1
+            'revenue_growth': 0.18,  # 成长能力，原0.1
+            'profit_growth': 0.18,  # 成长能力，原0.1
+            'current_ratio': 0.04,  # 偿债能力，原0.05
+            'debt_ratio': 0.04,  # 财务健康度（反向），原0.05
+            'asset_turnover': 0.05,  # 运营效率，原0.05
+            'cash_flow': 0.09,  # 现金流，原0.05
+        }
+
+        # 估值指标权重
+        valuation_weights = {
+            'pe': 0.10,  # 越低越好
+            'pb': 0.10,  # 越低越好
+            'ps': 0.05,  # 越低越好
+            'peg': 0.05,  # 越低越好
+            'dividend_yield': 0.05,  # 越高越好
+        }
+
+        # 获取最新报告期和前一期数据
+        sorted_dates = sorted(stock_data_dict.keys())
+        latest_date = sorted_dates[-1]
+        latest_data = stock_data_dict[latest_date]
+        prev_data = stock_data_dict[sorted_dates[-2]] if len(sorted_dates) >= 2 else None
+
+        # 计算财务指标得分
+        financial_scores = {}
+
+        # 计算各指标得分
+
+        # ROE (净资产收益率)
+        roe = latest_data.get(197, 0)
+        financial_scores['roe'] = roe
+
+        # 销售净利率
+        profit_margin = latest_data.get(199, 0)
+        financial_scores['profit_margin'] = profit_margin
+
+        # 营业收入增长率：优先使用同比计算
+        if prev_data:
+            prev_rev = prev_data.get(74, 0)
+            curr_rev = latest_data.get(74, 0)
+            if prev_rev != 0:
+                revenue_growth = (curr_rev - prev_rev) / prev_rev * 100
+            else:
+                revenue_growth = latest_data.get(183, 0)  # 备选字段值
+        else:
+            revenue_growth = latest_data.get(183, 0)
+        financial_scores['revenue_growth'] = revenue_growth
+
+        # 净利润增长率：优先使用同比计算
+        if prev_data:
+            prev_profit = prev_data.get(95, 0)
+            curr_profit = latest_data.get(95, 0)
+            if prev_profit != 0:
+                profit_growth = (curr_profit - prev_profit) / prev_profit * 100
+            else:
+                profit_growth = latest_data.get(184, 0)
+        else:
+            profit_growth = latest_data.get(184, 0)
+        financial_scores['profit_growth'] = profit_growth
+
+        # 流动比率
+        current_ratio = latest_data.get(159, 0)
+        financial_scores['current_ratio'] = current_ratio
+
+        # 资产负债率（反向指标） - 越低越好，转换为正向分数
+        debt_ratio = latest_data.get(210, 0)
+        # financial_scores['debt_ratio'] = 100 - debt_ratio if debt_ratio > 0 else 0
+        # 资产负债率（反向指标） - 取 100 - 资产负债率，并限幅在[0 - 100]之间，避免负值
+        financial_scores['debt_ratio'] = 100 - debt_ratio if 0 < debt_ratio < 100 else (0 if debt_ratio >= 100 else 100)
+
+        # 总资产周转率
+        asset_turnover = latest_data.get(175, 0)
+        financial_scores['asset_turnover'] = asset_turnover
+
+        # 现金流得分 - 使用经营活动现金流净额，标准化处理，字段107经营活动现金流净额，用亿元为单位，并限幅在[-10, 10]之间
+        cash_flow = latest_data.get(107, 0)
+        # 避免除以0或过大值，这个暂时去掉，A股上市公司现金流净额可能很大，比如工商银行，分红都有几百亿
+        # if abs(cash_flow) > 1e10:  # 100亿以上视为异常，这个设置本身就有问题，
         #     cash_flow = 0
         financial_scores['cash_flow'] = cash_flow / 1e9 if cash_flow != 0 else 0
 
@@ -705,23 +831,27 @@ class TDXFinancialValuationRanker:
         # 标准化估值指标得分
         normalized_valuation = normalize_scores(valuation_scores)
 
-        # 计算综合得分
-        total_score = 0
+        # 计算综合得分，申明变量
+        total_score = 0.0
+        financial_score = 0.0
+        valuation_score = 0.0
 
         # 财务指标部分
         for indicator, weight in financial_weights.items():
             score = normalized_financial.get(indicator, 0)
-            total_score += score * weight
+            financial_score += score * weight
 
         # 估值指标部分
         for indicator, weight in valuation_weights.items():
             score = normalized_valuation.get(indicator, 0)
-            total_score += score * weight
+            valuation_score += score * weight
+
+        total_score += financial_score * 0.7 + valuation_score * 0.3
 
         return total_score
 
     # ==================== 修改点：rank_by_category 利用多期数据，按类别排名 ====================
-    def rank_by_category(self, years=5, top_n=100, category='综合财务', test_mode=False):
+    def rank_by_category(self, years=5, top_n=100, category='综合纯财务', test_mode=False):
         """
         按类别进行排名
 
@@ -772,7 +902,7 @@ class TDXFinancialValuationRanker:
 
         # 构建多期数据字典：{股票代码: {日期: 财务数据}}
         all_stocks_multi = {}
-        max_stocks = 1000 if test_mode else None
+        max_stocks = 5000 if test_mode else None
 
         # 依次解析每个文件
         for file_path in tqdm( files, desc="解析文件进度" ):
@@ -830,15 +960,19 @@ class TDXFinancialValuationRanker:
                 tech_score = ta.get_technical_score()
 
             # 根据类别计算得分
-            if category == '综合财务':
+            if category == '综合纯财务':
+                # 传入多期数据字典，让内部使用多期计算增长率
+                score = self.calculate_pure_financial_metrics(multi_data)
+                final_score = score
+            elif category == '综合财务与估值':
                 # 传入多期数据字典，让内部使用多期计算增长率
                 score = self.calculate_comprehensive_score(multi_data, valuation_metrics)
-                final_score =score
-            elif category == '综合财务与技术':
+                final_score = score
+            elif category == '综合财务估值与技术':
                 score = self.calculate_comprehensive_score(multi_data, valuation_metrics)
                 final_score = (score * 0.7) + (tech_score * 0.3)
             elif category == '盈利能力':
-                # 盈利能力得分：ROE + 利润率（仅用最新期）
+                # 盈利能力得分：ROE + 利润率（仅用最新期财务数据，不涉及增长率，所以不需要多期）
                 roe = latest_financial.get(197, 0)
                 profit_margin = latest_financial.get(199, 0)
                 score = roe * 0.6 + profit_margin * 0.4
@@ -1058,22 +1192,23 @@ def main():
 
     # 选择排名类别
     print("\n请选择排名类别:")
-    print("1. 综合财务与估值排名")
-    print("2. 综合财务、估值与技术排名")
-    print("3. 盈利能力排名")
-    print("4. 盈利能力与技术排名")
-    print("5. 成长能力排名")
-    print("6. 成长能力与技术排名")
-    print("7. 估值水平排名")
-    print("8. 估值水平与技术排名")
-    print("9. 所有类别排名")
-    print("10. 测试模式（少量股票）")
+    print("1. 综合纯财务")
+    print("2. 综合财务与估值排名")
+    print("3. 综合财务、估值与技术排名")
+    print("4. 盈利能力排名")
+    print("5. 盈利能力与技术排名")
+    print("6. 成长能力排名")
+    print("7. 成长能力与技术排名")
+    print("8. 估值水平排名")
+    print("9. 估值水平与技术排名")
+    print("10. 所有类别排名")
+    print("11. 测试模式（少量股票）")
 
-    choice = input("\n请选择 (1-10): ").strip()
+    choice = input("\n请选择 (1-11): ").strip()
 
-    test_mode = (choice == '10')
+    test_mode = (choice == '11')
     if test_mode:
-        choice = '1'  # 测试模式下默认使用综合排名
+        choice = '1'  # 测试模式下默认使用综合纯财务排名
 
     years = 3 if test_mode else int(input("使用最近几年的数据? (默认3): ") or "3")
     top_n = 20 if test_mode else int(input("显示前多少名? (默认50): ") or "50")
@@ -1081,24 +1216,27 @@ def main():
     # categories_to_run = []
 
     if choice == '1':
-        categories_to_run = ['综合财务']
+        categories_to_run = ['综合纯财务']
     elif choice == '2':
-        categories_to_run = ['综合财务与技术']
+        categories_to_run = ['综合财务与估值']
     elif choice == '3':
-        categories_to_run = ['盈利能力']
+        categories_to_run = ['综合财务估值与技术']
     elif choice == '4':
-        categories_to_run = ['盈利能力与技术']
+        categories_to_run = ['盈利能力']
     elif choice == '5':
-        categories_to_run = ['成长能力']
+        categories_to_run = ['盈利能力与技术']
     elif choice == '6':
-        categories_to_run = ['成长能力与技术']
+        categories_to_run = ['成长能力']
     elif choice == '7':
-        categories_to_run = ['估值']
+        categories_to_run = ['成长能力与技术']
     elif choice == '8':
-        categories_to_run = ['估值与技术']
+        categories_to_run = ['估值']
     elif choice == '9':
-        categories_to_run = ['综合财务',
-                             '综合财务与技术',
+        categories_to_run = ['估值与技术']
+    elif choice == '10':
+        categories_to_run = ['综合纯财务'
+                             '综合财务与估值',
+                             '综合财务估值与技术',
                              '盈利能力',
                              '盈利能力与技术',
                              '成长能力',
