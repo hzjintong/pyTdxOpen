@@ -50,7 +50,7 @@ class TechnicalEngine:
     @staticmethod
     def get_signals(df_day):
         res = {'bull': False, 'vol': False, 'exit': False, 'valid_data': False, 'data_len': 0}
-        if df_day is None or len(df_day) < 35:  # 留出MA20所需的计算空间
+        if df_day is None or len(df_day) < 120:  # 留出MA20所需的计算空间
             if df_day is not None: res['data_len'] = len(df_day)
             return res
 
@@ -215,7 +215,7 @@ class TdxUltimateBacktester:
                     if sig['valid_data']:
                         if sig['bull'] or sig['vol']:
                             month_hits += 1
-                            industry_size = len(df[df['sector_name'] == row['sector_name']])
+                            industry_size = len(df[df['sector_name'] == row['sector_name']]) # 行业规模
                             exit_a = "财务预警" if row['sector_rank'] > (industry_size * 0.2) else "财务持仓"
                             exit_b = "技术破位" if sig['exit'] else "技术持仓"
 
@@ -234,9 +234,18 @@ class TdxUltimateBacktester:
 
         # 导出
         if self.results_log:
-            output = "Industry_Backtest_Final_Fixed.csv"
-            pd.DataFrame(self.results_log).to_csv(output, index=False, encoding='utf_8_sig')
-            print(f"\n[任务成功] 结果已导出至: {output}，共 {len(self.results_log)} 条数据。")
+            output = "Industry_Backtest_Final_Fixed.xlsx"
+            df_results = pd.DataFrame(self.results_log)
+            # 导出到Excel文件
+            try:
+                df_results.to_excel(output, index=False, engine='openpyxl')
+                print(f"\n[任务成功] 结果已导出至: {output}，共 {len(self.results_log)} 条数据。")
+            except ImportError:
+                print("警告: openpyxl库未安装，无法导出Excel文件，将使用CSV格式")
+                print("请运行: pip install openpyxl")
+                output_csv = "Industry_Backtest_Final_Fixed.csv"
+                df_results.to_csv(output_csv, index=False, encoding='utf_8_sig')
+                print(f"\n[任务成功] 结果已导出至: {output_csv}，共 {len(self.results_log)} 条数据。")
         else:
             print("\n[警告] 依然没有选中数据。请检查 DAY_DATA 路径是否指向了 vipdoc 文件夹。")
 
