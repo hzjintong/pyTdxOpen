@@ -20,39 +20,29 @@ def merge_day_data(file1_data, file2_data):
     return all_data
 
 
-def sort_day_time_data( all_data ):
-    # 按年月日和时分间戳进行排序
-    sorted_data1 = sorted ( all_data, key=lambda x:( x['datetime'] ))
+def sort_day_time_data(all_data):
+    # 按年月日和时分间戳进行排序，但使用稳定的排序以确保相同时间戳时保留原始顺序
+    sorted_data1 = sorted(all_data, key=lambda x: (x['datetime']))
 
     # 检查时间连续性并处理不连续的情况
     merged_data = []
-    prev_timestamp = None
+    seen_dates = set()  # 用于跟踪已经处理过的日期
     number_of_repetitions = 0
 
-    for i, record in enumerate(sorted_data1):
+    for record in sorted_data1:
         current_timestamp = record['datetime']  # 作为排序和剃重没有必要做时间对象转换
-        # current_timestamp = format_date2(record['datetime'])
 
-        # 如果是第一条记录，直接添加
-        if prev_timestamp is None:
-            merged_data.append(record)
-            prev_timestamp = current_timestamp
-            continue
-
-        # 检查时间是否有重复，剔除重复数据
-        time_diff = current_timestamp - prev_timestamp
-
-        if time_diff  == 0 : # timedelta( days=0 ) :   如果时间差为0 为重复数据需要剔除
+        # 如果这个日期已经处理过，跳过（保留第一个出现的记录）
+        if current_timestamp in seen_dates:
             number_of_repetitions = number_of_repetitions + 1  # 计算重复记录数
-            # print(f"发现重复数据，时间点: {prev_timestamp} -> {current_timestamp} (间隔: {time_diff} 天)")
-            prev_timestamp = current_timestamp
+            # print(f"发现重复数据，时间点: {current_timestamp}，跳过重复记录")
             continue
 
-        # 添加数据
+        # 添加数据并记录日期
         merged_data.append(record)
-        prev_timestamp = current_timestamp
+        seen_dates.add(current_timestamp)
 
-    print(f"合并排序后共有 {len(merged_data)} 条有效记录，已剔除 {number_of_repetitions} 条重复记录。")
+    # print(f"合并排序后共有 {len(merged_data)} 条有效记录，已剔除 {number_of_repetitions} 条重复记录。")
     return merged_data
 
 def write_tdx_day_file(data_list, output_path):
