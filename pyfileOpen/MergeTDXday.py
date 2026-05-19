@@ -76,7 +76,7 @@ def write_tdx_day_file(data_list, output_path):
 
                 f.write(record_data)
 
-        print(f"已写入 {len(data_list)} 条记录到 {output_path}")
+        # print(f"已写入 {len(data_list)} 条记录到 {output_path}")
         return True
     except Exception as e:
         print(f"写入文件 {output_path} 时出错: {e}")
