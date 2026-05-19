@@ -3,9 +3,13 @@ import re
 import struct
 import pandas as pd
 from typing import Dict, List, Tuple
-
+from tqdm import tqdm
 
 class TDXDuplicateScanner:
+    """
+    诊断通达信财务文件中的重复股票记录和字段问题
+    并输出xlsx报告
+    """
     def __init__(self, cw_dir: str, field_file: str):
         self.cw_dir = cw_dir
         self.field_names = self._load_field_names(field_file)
@@ -81,7 +85,7 @@ class TDXDuplicateScanner:
         files.sort(reverse=True)  # 从新日期开始扫
         print(f"开始扫描 {len(files)} 个文件...")
 
-        for fname in files:
+        for fname in tqdm(files, desc="扫描进度"):
             fpath = os.path.join(self.cw_dir, fname)
             stock_map = self._get_all_offsets(fpath)
 
