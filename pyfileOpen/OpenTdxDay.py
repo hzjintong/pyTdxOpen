@@ -57,8 +57,8 @@ def read_tdx_day_file(file_path, start_date=None, end_date=None):
 
             record_number = size // record_size
 
-            if record_number != 0 :
-                print(f"文件中共有（{record_number}）条记录。")
+            # if record_number != 0 :
+                # print(f"文件中共有（{record_number}）条记录。")
 
             if size % record_size != 0 :
                 print(f"警告: 文件大小({size}字节)不是{record_size}字节的整数倍，可能存在数据不完整")
@@ -91,7 +91,7 @@ def read_tdx_day_file(file_path, start_date=None, end_date=None):
                         'volume': day_line_data['volume'],  # 成交量(手)
                         'spare': day_line_data['spare']  # 备用
                     })
-        print(f"从 {file_path} 读取了 {len(data_list)} 条记录")
+        # print(f"从 {file_path} 读取了 {len(data_list)} 条记录")
         return data_list
 
     except Exception as e:
@@ -137,7 +137,7 @@ def validate_date_sequence(data_list):
                     prev_timestamp = current_timestamp
                     continue
 
-            #print(f"发现不连续时间段: {prev_timestamp.date()} -> {current_timestamp.date()} (间隔: {time_diff.days} 天)")
+            # print(f"发现不连续时间段: {prev_timestamp.date()} -> {current_timestamp.date()} (间隔: {time_diff.days} 天)")
 
             gaps.append({
                 'position': i,
