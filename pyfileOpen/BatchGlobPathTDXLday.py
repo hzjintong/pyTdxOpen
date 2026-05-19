@@ -331,7 +331,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
     # 你的 i3-5010U 有 4 个逻辑核心，建议 4-6 个线程
     # max_workers = os.cpu_count() + 1
     # max_workers = min(32, (os.cpu_count() or 1) * 4)  # 根据i7 CPU核心数设置线程数
-    max_workers = 15  # 根据i7 CPU核心数设置线程数 24
+    max_workers = 22  # 根据i7 CPU核心数设置线程数 24
 
     # 处理分钟文件
     user_interrupted = False  # 将变量声明移到if语句外部
@@ -393,8 +393,9 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
             print(f"分钟文件处理已中断：成功 {success_count} 个，失败 {fail_count} 个")
             # 重置中断标志
             set_interrupt_flag(False)
+            user_interrupted = False
             # 立即返回，不继续处理日线文件
-            return file_counter
+            # return file_counter # 不返回继续询问是否处理日线文件
         else:
             print(f"分钟文件处理完成：成功 {success_count} 个，失败 {fail_count} 个")
 
@@ -483,10 +484,10 @@ def main():
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
     path_structures = {
-        'bj': ['lday'],
-        'ds': ['lday'],
-        'sh': ['lday'],
-        'sz': ['lday']
+        'bj': ['minline', 'fzline', 'lday'],
+        'ds': ['minline', 'fzline', 'lday'],
+        'sh': ['minline', 'fzline', 'lday'],
+        'sz': ['minline', 'fzline', 'lday']
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
     }
 
