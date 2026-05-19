@@ -554,6 +554,54 @@ class TDXFinancialValuationRanker:
 
         return metrics
 
+    def calculate_pcf_score(self, pcf):
+        """
+        计算PCF得分，PCF是市现率 = 股价 / 每股现金流
+        PCF越低越好，表示现金流充足
+        """
+        if pcf <= 0:
+            return 0
+        return 0
+
+    def calculate_tdx_financial_score(self, stock_data_dict):
+        """
+        计算获取通达信财务数据中362号字段的财务评分
+        362号字段是综合财务评分，越高越好
+        Args:
+            stock_data_dict: 股票数据字典
+        Returns:
+            财务评分得分
+        """
+        if not stock_data_dict :
+            return 0
+
+        # 获取最新报告期和前一期数据
+        sorted_dates = sorted(stock_data_dict.keys())
+        latest_date = sorted_dates[-1]
+        latest_data = stock_data_dict[latest_date]
+        prev_data = stock_data_dict[sorted_dates[-2]] if len(sorted_dates) >= 2 else None
+
+        # 确保stock_data_dict是字典类型
+        try:
+            # 获取362号字段数据
+            if prev_data:
+                prev_financial_score = prev_data.get(362, 0)
+                curr_financial_score = latest_data.get(362, 0)
+                if prev_financial_score !=0:
+                    financial_score = curr_financial_score * 0.6 + prev_financial_score * 0.4
+                    return financial_score
+                else:
+                    financial_score = curr_financial_score
+                    return financial_score
+
+            else:
+                financial_score = latest_data.get(362, 0)
+                return financial_score
+
+        except Exception as e:
+            print(f"获取通达信财务总评分数据出错: {e}")
+            return 0
+
     @staticmethod
     def calculate_pure_financial_metrics(stock_data_dict):
         """
@@ -898,6 +946,7 @@ class TDXFinancialValuationRanker:
             210,  # 资产负债率
             219,  # 每股经营性现金流
             238,  # 总股本
+            362,  # 通达信提供的财务总评分
         ]
 
         # 构建多期数据字典：{股票代码: {日期: 财务数据}}
@@ -960,7 +1009,10 @@ class TDXFinancialValuationRanker:
                 tech_score = ta.get_technical_score()
 
             # 根据类别计算得分
-            if category == '综合纯财务':
+            if category == '通达信财务总评分':
+                score = self.calculate_tdx_financial_score(multi_data)
+                final_score = score
+            elif category == '综合纯财务':
                 # 传入多期数据字典，让内部使用多期计算增长率
                 score = self.calculate_pure_financial_metrics(multi_data)
                 final_score = score
@@ -1116,7 +1168,7 @@ class TDXFinancialValuationRanker:
 
                 # 添加指标说明
                 field_info = []
-                for idx in [1, 197, 74, 95, 183, 184, 210, 107]:
+                for idx in [1, 197, 74, 95, 183, 184, 210, 107, 362]:
                     if idx in self.field_names:
                         field_info.append({
                             '字段ID': idx,
@@ -1203,6 +1255,7 @@ def main():
     print("9. 估值水平与技术排名")
     print("10. 所有类别排名")
     print("11. 测试模式（少量股票）")
+    print("12. 通达信财务总评分排名")
 
     choice = input("\n请选择 (1-11): ").strip()
 
@@ -1234,7 +1287,7 @@ def main():
     elif choice == '9':
         categories_to_run = ['估值与技术']
     elif choice == '10':
-        categories_to_run = ['综合纯财务'
+        categories_to_run = ['综合纯财务',
                              '综合财务与估值',
                              '综合财务估值与技术',
                              '盈利能力',
@@ -1242,7 +1295,10 @@ def main():
                              '成长能力',
                              '成长能力与技术',
                              '估值',
-                             '估值与技术']
+                             '估值与技术',
+                             '通达信财务总评分']
+    elif choice == '12':
+        categories_to_run = ['通达信财务总评分']
     else:
         print("无效选择")
         return
