@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # 新的执行增量同步，检测所有文件的变化，并输出 Excel 日志
     time_stamp = datetime.now().strftime("%Y%m%d%H%M")
     db.sync_and_log_changes(
-        start_year=1988,
+        start_year=1987,
         end_year=2030,
         export_excel=True,
         excel_path=f"财务数据变更日志_{time_stamp}.xlsx"
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # 扫描重复记录并导出 Excel
     db.scan_duplicates(
-        start_year=1988,
+        start_year=1987,
         end_year=2030,
         output_excel=f"重复股票检测报告_{time_stamp}.xlsx",
         tolerance=1e-6  # 容忍度

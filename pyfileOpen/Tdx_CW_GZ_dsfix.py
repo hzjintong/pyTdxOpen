@@ -227,6 +227,7 @@ class TDXFinancialValuationRanker:
             # 格式：代碼,日期,送股,配股,配價,紅利
             df_splits = pd.read_csv( split_file,
                                      encoding='gb18030',
+                                     encoding_errors='ignore',
                                      header=0,
                                      names=['code', 'date', 'song', 'pei', 'peiprice', 'fenhong'],
                                      dtype={'code': str, 'date': int, 'song': float, 'pei': float, 'peiprice': float,
@@ -583,7 +584,7 @@ class TDXFinancialValuationRanker:
 
         # 确保stock_data_dict是字典类型
         try:
-            # 获取362号字段数据
+            # 获取362号字段数据，如果不存在则返回0，362字段事通达信提供的财务总评分
             if prev_data:
                 prev_financial_score = prev_data.get(362, 0)
                 curr_financial_score = latest_data.get(362, 0)

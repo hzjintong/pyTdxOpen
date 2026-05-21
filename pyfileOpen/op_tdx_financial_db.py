@@ -177,7 +177,7 @@ class TDXFinancialDB:
         # 我们只需要字段值部分（index 3 开始）
         return row[3:]  # 584个值
 
-    def sync_and_log_changes(self, start_year: int = 2000, end_year: int = 2030,
+    def sync_and_log_changes(self, start_year: int = 1987, end_year: int = 2030,
                              export_excel: bool = True, excel_path: str = "changes_log.xlsx",
                              tolerance: float = 1e-6):
         """
