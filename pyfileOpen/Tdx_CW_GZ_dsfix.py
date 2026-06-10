@@ -226,7 +226,7 @@ class TDXFinancialValuationRanker:
             # 讀取權息文件，手動處理代碼前綴 (SH/SZ)
             # 格式：代碼,日期,送股,配股,配價,紅利
             df_splits = pd.read_csv( split_file,
-                                     encoding='gb18030',
+                                     encoding='utf-8',   # 由于update_split.py 輸出回写為 utf-8,这里需要使用utf-8，后续考虑写入数据库表格
                                      encoding_errors='ignore',
                                      header=0,
                                      names=['code', 'date', 'song', 'pei', 'peiprice', 'fenhong'],
