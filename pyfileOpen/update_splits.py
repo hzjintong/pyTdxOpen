@@ -103,9 +103,9 @@ def update_all_history_splits(local_file="wsSHSZ_SPLITs.txt"):
 
                     date_int = int(str(ex_date).replace("-", "").replace("/", "").split(" ")[0])
 
-                    sg = float(row.get("送股比例(每10股)") or 0)
-                    zr = float(row.get("转增比例(每10股)") or 0)
-                    px = float(row.get("派息(每10股/元)") or 0)
+                    sg = float(row.get("送股(股)") or 0)
+                    zr = float(row.get("转增(股)") or 0)
+                    px = float(row.get("派息(税前)(元)") or 0)
 
                     song_ratio = (sg + zr) / 10.0
                     fenhong_ratio = px / 10.0
@@ -124,7 +124,7 @@ def update_all_history_splits(local_file="wsSHSZ_SPLITs.txt"):
                 success_count += 1
 
             # 🟢 动态安全延时 (每请求一次，随机休息 0.2 到 0.5 秒，防止被封)
-            time.sleep(random.uniform(1.2, 3.5))
+            time.sleep(random.uniform(0.2, 0.5))
 
             # 每成功抓取 50 只股票自动向硬盘物理文件保存追加一次，实现完美的断点续传
             if success_count % 50 == 0 and new_records:
