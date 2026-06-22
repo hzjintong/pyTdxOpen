@@ -77,3 +77,13 @@ if __name__ == "__main__":
     # 测试：获取 上海(1) 招商银行(600036) 的除权除息数据
     # 如果你想试 深圳(0) 平安银行(000001)，直接修改入参即可
     df_xdxr = fetch_and_inspect_xdxr(market_code=1, stock_code='600036')
+    if df_xdxr is not None:
+        print(f"数据获取成功，共 {len(df_xdxr)} 条记录。")
+        # 你可以在这里继续做分析，比如筛选配股的记录进行打印
+        print(df_xdxr[0:5])
+    df_xdxr = fetch_and_inspect_xdxr(market_code=0, stock_code='000549')
+    if df_xdxr is not None:
+        print(f"数据获取成功，共 {len(df_xdxr)} 条记录。")
+        # 你可以在这里继续做分析，比如筛选配股的记录进行打印
+        print(df_xdxr[0:5])
+

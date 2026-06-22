@@ -185,8 +185,8 @@ def main():
     #尝试调用
     try:
         # 读取日线数据
-        # day_data = read_tdx_day_file(filepath,start_date_time,end_date_time)
-        day_data = read_tdx_day_file(filepath)
+        day_data = read_tdx_day_file(filepath,start_date_time,end_date_time)
+        # day_data = read_tdx_day_file(filepath)
 
         is_valid = validate_date_sequence(day_data)
 
@@ -202,7 +202,7 @@ def main():
             i = 0
             for i, data in enumerate(day_data[0:20]):  # 只打印前5条
                 print(f"{format_day_date_obj(data['datetime']).date()}: Open:{data['open']/100} High:{data['high']/100} Low:{data['low']/100} Close:{data['close']/100}"
-                      f" Volume:{data['volume']} Amount:{data['amount']} Spare:{data['spare']}")
+                      f" Volume:{data['volume']} Amount:{data['amount']}（元） Spare:{data['spare']}")
             print(f"共打印 {i + 1} 条记录。")
             i = 0
             for i, data in enumerate(day_data[len(day_data)-20:len(day_data)]):  # 只打印后5条

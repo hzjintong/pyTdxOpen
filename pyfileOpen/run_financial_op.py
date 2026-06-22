@@ -1,6 +1,12 @@
 from datetime import datetime
 from op_tdx_financial_db import TDXFinancialDB
 
+"""
+需长期使用，每日进行更新，注意：财务数据文件是gpcw.dat，
+在通达信目录下 vipdoc/cw/
+更新时是定位查找，没有的记录进行新增，有的记录进行更新覆盖，并输出日志文件。
+"""
+
 if __name__ == '__main__':
     CW_DIR = "d:/new_hxzq_hc/vipdoc/cw/"          # 通达信财务数据目录
     FIELD_TXT = "专业财务数据字段说明.txt"
