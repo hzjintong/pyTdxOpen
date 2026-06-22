@@ -188,8 +188,8 @@ def main():
     #尝试调用
     try:
         # 读取日线数据
-        # day_data = read_tdx_day_file(filepath,start_date_time,end_date_time)
-        day_data = read_tdx_day_file(filepath)
+        day_data = read_tdx_day_file(filepath,start_date_time,end_date_time)
+        # day_data = read_tdx_day_file(filepath)
 
         is_valid = validate_date_sequence(day_data)
 
