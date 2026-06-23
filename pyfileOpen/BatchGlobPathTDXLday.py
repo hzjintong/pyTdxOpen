@@ -330,8 +330,8 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
     # Gemini建议 2：针对双核 CPU 和 3.14t 调整线程数
     # 你的 i3-5010U 有 4 个逻辑核心，建议 4-6 个线程
     # max_workers = os.cpu_count() + 1
-    # max_workers = min(32, (os.cpu_count() or 1) * 4)  # 根据i7 CPU核心数设置线程数
-    max_workers = 22  # 根据i7 CPU核心数设置线程数 24
+    max_workers = min(48, (os.cpu_count() or 1) * 4)  # 根据i7 CPU核心数设置线程数，最小32测试过
+    # max_workers = 24  # 根据i7 CPU核心数设置线程数 24
 
     # 处理分钟文件
     user_interrupted = False  # 将变量声明移到if语句外部
@@ -479,7 +479,7 @@ def batch_merge_vipdoc(vipdoc_root_path, vipdoc_home_path, target_structures):
 
 # 使用示例
 def main():
-    tdx_vipdoc_dir = "D:/new_hxzq_hc/vipdoc"  # 请修改为您的通达信VIPDOC实际路径
+    tdx_vipdoc_dir = "D:/new_tdx/vipdoc"  # 请修改为您的通达信VIPDOC实际路径
     taget_vipdoc_path = 'F:/D盘备份1/new_hxzq_hc/vipdoc' # 请修改为您的其他数据的实际路径
     # 键：市场目录名 (e.g., 'sh', 'sz')
     # 值：一个列表，包含要处理的数据类型子目录名 (e.g., 'minline', 'fzline', 'lday')
