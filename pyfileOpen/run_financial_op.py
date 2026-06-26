@@ -10,7 +10,7 @@ from op_tdx_financial_db import TDXFinancialDB
 if __name__ == '__main__':
     CW_DIR = "d:/new_hxzq_hc/vipdoc/cw/"          # 通达信财务数据目录
     FIELD_TXT = "专业财务数据字段说明.txt"
-    DB_PATH = "d:/tdx_financial.db"
+    DB_PATH = "D:/tdx_financial.db"
 
     db = TDXFinancialDB(CW_DIR, FIELD_TXT, DB_PATH)
 
@@ -23,10 +23,10 @@ if __name__ == '__main__':
     # db.batch_import(start_year=1988, end_year=2027)
 
     # 后续增量更新（当 cw 目录下出现新的 gpcw 文件时执行）
-    db.incremental_update()
+    # db.incremental_update()
 
     # 更新字段说明表
-    db.sync_field_desc_table()
+    # db.sync_field_desc_table()
 
     # 新的执行增量同步，检测所有文件的变化，并输出 Excel 日志
     time_stamp = datetime.now().strftime("%Y%m%d%H%M")

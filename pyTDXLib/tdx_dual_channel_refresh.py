@@ -11,7 +11,7 @@ from pytdx.exhq import TdxExHq_API
 
 # === 核心路徑配置（E 盤與本地環境完全對齊） ===
 DB_PATH = r"E:\tdx_financial.db"
-CFG_PATH = r"D:\new_hxzq_hc\connect.cfg"
+CFG_PATH = r"D:\new_tdx\connect.cfg"
 BASE_DIR = r"D:\new_hxzq_hc\vipdoc"
 FINAL_AUDIT_LOG = r"E:\tdx_dual_channel_audit.xlsx"
 

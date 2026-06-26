@@ -59,7 +59,7 @@ def refresh_local_binary_files(db_meta):
         record_size = 32
 
         for file_name in file_list:
-            if not file_name.endswith('.day'):
+            if not file_name.endswith('.day'):  # endswith是作为方法调用，修正：.day 文件
                 continue
 
             stock_code = os.path.splitext(file_name)[0].upper()
