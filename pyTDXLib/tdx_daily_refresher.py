@@ -10,7 +10,7 @@ from pytdx.hq import TdxHq_API
 # === 核心配置對齊 ===
 DB_PATH = r"E:\tdx_financial.db"
 BASE_DIR = r"D:\new_hxzq_hc\vipdoc"
-AUDIT_LOG_PATH = r"D:\tdx_daily_update_audit.xlsx"
+AUDIT_LOG_PATH = f"D:/tdx_daily_update_audit{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"
 HQ_SERVER = ('103.251.85.58', 7709)
 
 PATH_STRUCTURES = {
@@ -78,7 +78,7 @@ def refresh_local_binary_files(db_meta):
                 new_to_insert = []
                 with open(file_path, 'rb') as f:
                     # 粗略定位：如果資料庫已有 N 條，直接跳過前面的數據
-                    start_pos = max(0, (stock_meta['count'] - 5) * record_size)
+                    start_pos = max(0, (stock_meta['count'] - 5 ) * record_size)
                     f.seek(start_pos)
 
                     while True:
@@ -90,7 +90,7 @@ def refresh_local_binary_files(db_meta):
                         trade_date = data[0]
 
                         # 僅處理比資料庫最新日期更晚的數據
-                        if last_date and trade_date <= last_date:
+                        if last_date and trade_date <= last_date - 5:  # 留點緩衝，防止最后几天的数据并非收盘后的最终数据
                             continue
 
                         if is_ds:

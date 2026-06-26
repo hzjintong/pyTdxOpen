@@ -10,7 +10,7 @@ from op_tdx_financial_db import TDXFinancialDB
 if __name__ == '__main__':
     CW_DIR = "d:/new_hxzq_hc/vipdoc/cw/"          # 通达信财务数据目录
     FIELD_TXT = "专业财务数据字段说明.txt"
-    DB_PATH = "D:/tdx_financial.db"
+    DB_PATH = "E:/tdx_financial.db"
 
     db = TDXFinancialDB(CW_DIR, FIELD_TXT, DB_PATH)
 
