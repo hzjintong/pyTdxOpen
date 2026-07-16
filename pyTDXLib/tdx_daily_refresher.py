@@ -1,6 +1,7 @@
 import os
 import struct
 import sqlite3
+from tqdm import tqdm
 import pandas as pd
 from datetime import datetime
 from pytdx.hq import TdxHq_API
@@ -58,7 +59,7 @@ def refresh_local_binary_files(db_meta):
         struct_fmt = '<I5f2I' if is_ds else '<5If2I'
         record_size = 32
 
-        for file_name in file_list:
+        for file_name in tqdm(file_list, desc="Processing file_list"):
             if not file_name.endswith('.day'):  # endswith是作为方法调用，修正：.day 文件
                 continue
 
