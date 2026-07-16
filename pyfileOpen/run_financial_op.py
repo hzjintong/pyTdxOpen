@@ -34,13 +34,13 @@ if __name__ == '__main__':
         start_year=1987,
         end_year=2030,
         export_excel=True,
-        excel_path=f"财务数据变更日志_{time_stamp}.xlsx"
+        excel_path=f"E:/分析日志/财务数据变更日志_{time_stamp}.xlsx"
     )
 
     # 扫描重复记录并导出 Excel
     db.scan_duplicates(
         start_year=1987,
         end_year=2030,
-        output_excel=f"重复股票检测报告_{time_stamp}.xlsx",
+        output_excel=f"E:/分析日志/重复股票检测报告_{time_stamp}.xlsx",
         tolerance=1e-6  # 容忍度
     )
