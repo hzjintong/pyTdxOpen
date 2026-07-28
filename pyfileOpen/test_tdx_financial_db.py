@@ -2,7 +2,7 @@ import sqlite3
 
 
 def inspect_db_structure():
-    conn = sqlite3.connect("D:/tdx_financial.db")
+    conn = sqlite3.connect("E:/tdx_financial.db")
     cursor = conn.cursor()
 
     # 1. 打印数据库里所有的表名
