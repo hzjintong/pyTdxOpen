@@ -1,8 +1,8 @@
 import struct
 from datetime import datetime, timedelta
-from turtledemo.clock import current_day
+# from turtledemo.clock import current_day
 
-import calendar
+# import calendar
 import holidays
 # import os
 
@@ -95,7 +95,7 @@ def read_tdx_day_file(file_path, start_date=None, end_date=None):
         return data_list
 
     except Exception as e:
-        print(f"读取文件 {file_path} 时出错: {e}")
+        print(f"读取文件出错: {e}")
         return []
 
 def validate_date_sequence(data_list):

@@ -13,7 +13,7 @@ from pytdx.exhq import TdxExHq_API
 DB_PATH = r"E:\tdx_financial.db"
 CFG_PATH = r"D:\new_tdx\connect.cfg"
 BASE_DIR = r"D:\new_hxzq_hc\vipdoc"
-FINAL_AUDIT_LOG = r"E:\tdx_dual_channel_audit.xlsx"
+FINAL_AUDIT_LOG = r"E:\分析日志\tdx_dual_channel_audit.xlsx"
 
 
 def parse_and_speed_test(cfg_path):

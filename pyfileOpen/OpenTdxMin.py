@@ -128,7 +128,7 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
         return data_list
 
     except Exception as er:
-        print(f"读取文件 {file_path} 时出错: {er}")
+        print(f"读取文件出错: {er}")
         return []
 
 def validate_datetime_sequence(data_list, file_path):

@@ -10,7 +10,7 @@ from pytdx.exhq import TdxExHq_API
 # === 核心配置對齊 ===
 DB_PATH = r"E:\tdx_financial.db"  # 已成功遷移至 E 盤
 CFG_PATH = r"D:\new_hxzq_hc\connect.cfg"
-LOG_XLSX = r"E:\tdx_smart_scan_log.xlsx"
+LOG_XLSX = r"E:\分析日志\tdx_smart_scan_log.xlsx"
 
 
 def parse_connect_cfg(cfg_path):

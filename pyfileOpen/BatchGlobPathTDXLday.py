@@ -3,15 +3,15 @@ import os
 import glob
 import keyboard
 from pathlib import Path
-from datetime import datetime, time,timedelta
+from datetime import datetime # , time,timedelta
 from MergeTDXday import merge_day_data, read_tdx_day_file, sort_day_time_data, write_tdx_day_file
 from MergeTDXLC1 import merge_minute_data, sort_min_time_data, read_tdx_min_file, write_tdx_min_file
 from tqdm import tqdm
 import concurrent.futures
 import threading
-import random
-import sys
-import time as time_module
+# import random
+# import sys
+# import time as time_module
 
 # 线程安全的计数器
 file_counter = 0
@@ -24,8 +24,9 @@ def check_for_exit():
     try:
         if keyboard.is_pressed('CTRL+q') :
             return True
-    except:
+    except Exception as error:
         # keyboard库在某些环境下可能出错，忽略
+        print(f"检查退出键时出错: {error}")
         pass
     return False
 
@@ -51,26 +52,9 @@ def merge_min_data(input_filename, output_filename):
     # print("正在合并文件1、2数据...")
     merged_data = merge_minute_data(file1_data, file2_data)
     del file1_data, file2_data  # 显式提示内存回收，减轻 3.14t 在多线程下的 GC 压力
-    # if not merged_data:
-    #     print("合并文件1、2数据不成功。")
-    # else:
-    #     print("文件1、2数据合并成功！")
-
-    # print("正在做时间排序，并剔除重复数据...")
     sorted_data = sort_min_time_data(merged_data)
-    # if not sorted_data:
-    #     print("数据排序不成功。")
-    # else:
-    #     print("时间排序剔重成功完成！")
-
-    # 例如：逐个读取input_files中的文件，解析并合并数据，最后写入output_filename
     # 写入合并后的文件
-    # print(f"正在写入合并后的数据到输出文件{output_filename} ...")
     success = write_tdx_min_file(sorted_data, output_filename)
-    # if success:
-        # print("合并数据文件写入指定分钟 输出 目录完成。")
-    # else:
-        # print(f"合并数据文件写入到分钟 输出目录 {output_filename} 失败！")
 # -------++++++++=============================================================================++++++++-------
     # 例如：逐个读取input_files中的文件，解析并合并数据，最后也写入input_filename
     # 写入合并后的文件,作为一种备份。
@@ -96,38 +80,21 @@ def merge_lday_data(input_filename, output_filename):
     file2_data = read_tdx_day_file(output_filename)
 
     if not file1_data and not file2_data:
-        print("文件1、2都没有数据，程序退出")
+        # print("文件1、2都没有数据，程序退出")
         return None
 
     # 合并数据
     # print("正在合并文件1、2数据...")
     merged_data = merge_day_data(file1_data, file2_data)
     del file1_data, file2_data  # 显式提示内存回收，减轻 3.14t 在多线程下的 GC 压力
-    # if not merged_data:
-    #     print("合并文件1、2数据不成功。")
-    # else:
-    #     print("文件1、2数据合并成功！")
 
     # print("正在做时间排序，并剔除重复数据...")
     sorted_data = sort_day_time_data(merged_data)
-    # if not sorted_data:
-    #     print("数据排序不成功。")
-    # else:
-    #     print("时间排序剔重成功完成！")
 
     # 例如：逐个读取input_files中的文件，解析并合并数据，最后写入output_filename
     # 写入合并后的文件
     # print("正在写入合并后的文件...")
     success = write_tdx_day_file(sorted_data, output_filename)
-
-    # if success:
-        # print("合并数据文件写入日线 输出 目录完成。")
-    # else:
-        # print(f"合并数据文件写入日线 输出目录 {output_filename} 失败！")
-
-    # print(f"开始合并 {len(input_files)} 个文件到 {output_filename}")
-    # ... your existing code here ...
-    #print(f"合并完成！输出文件：{output_filename}")
 # -------++++++++=============================================================================++++++++-------
     # 例如：逐个读取input_files中的文件，解析并合并数据，最后也写入input_filename
     # 写入合并后的文件,作为一种备份。

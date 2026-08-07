@@ -11,7 +11,7 @@ from pytdx.hq import TdxHq_API
 # === 核心配置對齊 ===
 DB_PATH = r"E:\tdx_financial.db"
 BASE_DIR = r"D:\new_hxzq_hc\vipdoc"
-AUDIT_LOG_PATH = f"E:/分析日志/tdx_daily_update_audit{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"
+AUDIT_LOG_PATH = f"E:/分析日志/日线审计_tdx_daily_update_audit{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"
 HQ_SERVER = ('103.251.85.58', 7709)
 
 PATH_STRUCTURES = {

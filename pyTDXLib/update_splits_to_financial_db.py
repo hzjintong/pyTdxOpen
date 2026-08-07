@@ -8,7 +8,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # 🎯 你的共享财务数据库路径
-DB_PATH = "D:/tdx_financial.db"
+DB_PATH = "E:/tdx_financial.db"
 
 # 你测试验证通过的高速行情服务器列表
 SERVERS = [
