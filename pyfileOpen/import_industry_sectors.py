@@ -4,8 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 
 # 🎯 您的核心配置路徑
-DB_PATH = "D:/tdx_financial.db"
-TXT_PATH = "E:/pyfileOpen-20251230/pyfileOpen/二级行业板块.txt"
+DB_PATH = "E:/tdx_financial.db"
+TXT_PATH = "D:/二级行业板块.txt"
 
 # 🎯 核心防禦開關：如果表結構發生衝突報錯，將此處改為 True，運行一次後會自動洗表重構
 FORCE_REBUILD = False  # 遇到表結構衝突報，需要变更时改為 True ，也可以直接删除表，或手工增江两个字段，以便保留已经手工维护进去的退市股票
