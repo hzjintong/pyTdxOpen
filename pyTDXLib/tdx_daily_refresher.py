@@ -24,6 +24,7 @@ PATH_STRUCTURES = {
 
 def get_db_kline_meta():
     """從資料庫獲取全市場所有股票的最新日期與記錄數，用於增量對比"""
+    print("[*] 阶段 1：讀取資料庫現有K線...")
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT stock_code, MAX(trade_date), COUNT(*) FROM stock_daily_kline GROUP BY stock_code;")
@@ -44,7 +45,7 @@ def refresh_local_binary_files(db_meta):
     audit_records = []
     total_new_rows = 0
 
-    print("[*] 階段 1：開始掃描本地二進制目錄進行高效率增量更新...")
+    print("[*] 階段 2：開始掃描本地二進制目錄進行高效率增量更新...")
 
     for market, sub_dirs in PATH_STRUCTURES.items():
         if 'lday' not in sub_dirs:
@@ -134,7 +135,7 @@ def patch_via_network(db_meta, audit_records):
     """
     第二部分：針對在市交易個股進行網路一致性校驗與網路修補
     """
-    print("\n[*] 階段 2：啟動網路接口進行常規在市個股數據校验與缺失補全...")
+    print("\n[*] 階段 3：啟動網路接口進行常規在市個股數據校验與缺失補全...")
     api = TdxHq_API()
 
     # 這裡我們篩選出主板滬深交易活躍個股進行校驗（可過濾指數或特定標的）
@@ -165,6 +166,7 @@ def patch_via_network(db_meta, audit_records):
                 for _, row in df_net.iterrows():
                     net_date = int(row['date'].replace('-', '')) if isinstance(row['date'], str) else row['date']
                     net_close = row['close']
+                    print(f"  校驗 {stock_code}, {net_close}, {net_date}")
 
                     # 查詢本地資料庫是否存在這一天的數據
                     cursor.execute("SELECT close FROM stock_daily_kline WHERE stock_code=? AND trade_date=?",
