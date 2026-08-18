@@ -2,7 +2,9 @@ import sqlite3
 import os
 import pandas as pd
 
-
+"""
+量化系统1：行业内因子排名器（现金流）
+"""
 class MultiFactorSectorRanker高性能版:
     def __init__(self, db_path: str = "E:/tdx_financial.db"):
         self.db_path = db_path
