@@ -146,4 +146,4 @@ if __name__ == "__main__":
     FIELD_TXT = "专业财务数据字段说明.txt"
 
     scanner = TDXDuplicateScanner(CW_DIR, FIELD_TXT)
-    scanner.scan("通达信重复记录诊断报告.xlsx")
+    scanner.scan("E:/分析日志/通达信CW重复记录诊断报告.xlsx")
