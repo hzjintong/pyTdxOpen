@@ -215,7 +215,7 @@ class IndustryFactorRanker:
 # ==========================================
 if __name__ == "__main__":
     # 设定分析的目标财报周期 (如 2024年年报)
-    TARGET_REPORT_DATE = 20251231
+    TARGET_REPORT_DATE = 20260331
     OUTPUT_EXCEL_PATH = f"E:/分析日志/行业Top5财务评分分析_{TARGET_REPORT_DATE}.xlsx"
 
     ranker = IndustryFactorRanker(db_path="E:/tdx_financial.db")
