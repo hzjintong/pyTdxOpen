@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 import numpy as np
-
+from datetime import datetime
 
 class IndustryFactorRanker:
     """
@@ -215,8 +215,9 @@ class IndustryFactorRanker:
 # ==========================================
 if __name__ == "__main__":
     # 设定分析的目标财报周期 (如 2024年年报)
-    TARGET_REPORT_DATE = 20251231
-    OUTPUT_EXCEL_PATH = f"E:/分析日志/行业Top5财务评分分析_{TARGET_REPORT_DATE}.xlsx"
+    TARGET_REPORT_DATE = 20260630
+    TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+    OUTPUT_EXCEL_PATH = f"E:/分析日志/行业Top5财务评分{TARGET_REPORT_DATE}报告期分析_{TIMESTAMP}.xlsx"
 
     ranker = IndustryFactorRanker(db_path="E:/tdx_financial.db")
 
