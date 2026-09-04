@@ -87,7 +87,7 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
             size = len(buffer)
             record_size = 32  # 每条记录32字节
 
-            record_number = size // record_size
+            # record_number = size // record_size
 
             # if record_number != 0 :
             #     print(f"文件{file_path}中约有（{record_number}）条记录。")
@@ -128,7 +128,7 @@ def read_tdx_min_file(file_path, start_datetime=None, end_datetime=None):
         return data_list
 
     except Exception as er:
-        print(f"读取文件出错: {er}")
+        # print(f"读取文件出错: {er}")
         return []
 
 def validate_datetime_sequence(data_list, file_path):

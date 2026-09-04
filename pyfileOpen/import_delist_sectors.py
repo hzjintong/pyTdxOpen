@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 # 🎯 核心路径配置
 DB_PATH = "E:/tdx_financial.db"
-CSV_PATH = "./A股退市清单.csv"  # 请确保该 csv 放在脚本同级目录下，或指定绝对路径
+CSV_PATH = "D:/A股退市清单.csv"  # 请确保该 csv 放在脚本同级目录下，或指定绝对路径
 
 
 def guess_market_prefix(code: str) -> str:
