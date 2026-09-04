@@ -1,6 +1,6 @@
 import sqlite3
 import pandas as pd
-import numpy as np
+# import numpy as np
 from datetime import datetime
 
 
@@ -105,7 +105,8 @@ class BatchIndustryFactorRanker:
             df_scored[f'{col}_zscore'] = (df_scored[col] - mean) / std
         return df_scored
 
-    def calculate_scores_and_ratings(self, df: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def calculate_scores_and_ratings(df: pd.DataFrame) -> pd.DataFrame:
         weights = {
             'roe_zscore': 0.35,
             'profit_yoy_zscore': 0.25,
@@ -206,6 +207,7 @@ class BatchIndustryFactorRanker:
                 SET custom_score = ?, custom_rating = ?
                 WHERE stock_code = ? AND report_date = ?;
             """, update_data_main)
+            conn.commit()
 
             # 打印受影响行数（调试用）
             total_updated = cursor.rowcount  # 注意：executemany 后 rowcount 是所有影响行的总数
