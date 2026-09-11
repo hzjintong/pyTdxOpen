@@ -149,7 +149,7 @@ class IndustryFactorRanker:
         top5_df = (
             df.sort_values(by=['industry_code', 'composite_score'], ascending=[True, False])
             .groupby('industry_code')
-            .head(5)
+            .head(3)
             .copy()
         )
 
