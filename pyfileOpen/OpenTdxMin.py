@@ -4,6 +4,7 @@ import holidays
 # from sympy.physics.units import amount
 import os
 import csv   #新增：用于处理CSV输出
+import numpy as np
 # 定义错误日志文件名
 ERROR_LOG_CSV = r"tdx_minute_parsing_errors.csv"
 
@@ -32,7 +33,8 @@ def log_parsing_error(file_path, record_idx, record, error_msg):
 def format_minute_datetime_str(date_code, minutes_past_midnight):
     # 解码计算日期和时间
     # 日期解码（参考多种方法）
-    year = int (date_code / 2048) + 2004
+    year = int (date_code // 2048) + 2004
+    year = np.where(year > 2030 ,year - 32, year)
     month = int (date_code % 2048) // 100
     day = int (date_code % 2048) % 100
     if year > int( datetime.now().year ) :
