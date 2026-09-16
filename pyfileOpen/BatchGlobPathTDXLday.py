@@ -454,7 +454,7 @@ def main():
         'bj': ['minline', 'fzline', 'lday'],    # 北京
         'ds': ['minline', 'fzline', 'lday'],    # 扩展市场
         'sh': ['minline', 'fzline', 'lday'],    # 上海
-        'sz': ['minline', 'fzline', 'lday']     # 深圳
+        'sz': ['minline', 'fzline', 'lday']     # 深圳，
         # 如果您还有其他市场，例如北京交易所('bj')，可以在这里添加
     }
 
