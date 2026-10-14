@@ -1,7 +1,7 @@
 import os
 # import glob
 from datetime import datetime, timedelta
-from pyfileOpen.OpenTdxMin import format_minute_datetime_obj, parse_tdx_minute_record
+from OpenTdxMin import format_minute_datetime_obj, parse_tdx_minute_record
 # from pathlib import Path
 
 def read_tdx_min_file2( file_path ) :
@@ -73,7 +73,7 @@ def main():
         print("分钟线数据:")
         #datetime_str = format_minute_datetime_str( min_data[0]['begin_date'], min_data[0]['begin_time'])
         #end_date_time = datetime.strptime(datetime_str, '%Y/%m/%d %H:%M:%S')
-        end_date_time = format_minute_datetime_obj(min_data[0]['begin_date'], min_data[0]['begin_time'])
+        end_date_time = format_minute_datetime_obj(min_data[0]['datetime'], min_data[0]['timestamp'])
         if datetime.now()-end_date_time >= timedelta(days=1095):
             # 删除最后交易日数据为1095天前（即距今已经三年）的分钟数据文件，
             delete_min_file(input_path)
