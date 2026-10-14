@@ -34,10 +34,10 @@ def format_minute_datetime_str(date_code, minutes_past_midnight):
     # 解码计算日期和时间
     # 日期解码（参考多种方法）
     year = int (date_code // 2048) + 2004
-    year = np.where(year > 2030 ,year - 32, year)
+    # year = np.where(year > 2030 ,year - 32, year)
     month = int (date_code % 2048) // 100
     day = int (date_code % 2048) % 100
-    if year > int( datetime.now().year ) :
+    if year > 2030 :
         year = year - 32
     # 解码计算时间
     hour = minutes_past_midnight // 60
@@ -285,7 +285,7 @@ def validate_datetime_sequence(data_list, file_path):
 
 # 使用示例
 def main():
-    filepath = r"G:\D盘备份1\new_hxzq_hc\vipdoc\sz\fzline\sz000006.lc5"  # 指定需要读取的文件名及其完整路径
+    filepath = r"F:\D盘备份1\new_hxzq_hc\vipdoc\sz\fzline\sz000006.lc5"  # 指定需要读取的文件名及其完整路径
     # start_date_time = "1990/01/01 09:20"
     # end_date_time = "2026/12/31 19:40"
     # 尝试调用
