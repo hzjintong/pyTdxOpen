@@ -190,7 +190,7 @@ def batch_convert_tdx_structure(
 
 if __name__ == '__main__':
     # 1. 实际输入的通达信 vipdoc 根路径
-    TDX_VIPDOC_DIR = r"D:/new_hxzq_hc/vipdoc"
+    TDX_VIPDOC_DIR = r"F:\D盘备份1\new_hxzq_hc\vipdoc"
 
     # 2. 转换后 Parquet 文件的输出目标路径 (建议存放在空间充裕的 E 盘)
     OUTPUT_PARQUET_DIR = r"E:/quant_parquet"
